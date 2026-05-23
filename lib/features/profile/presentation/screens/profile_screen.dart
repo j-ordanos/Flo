@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_gradients.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/money/currency.dart';
+import '../../../../core/providers/session_provider.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
 import '../../../expenses/presentation/providers/expense_providers.dart';
 import '../providers/settings_providers.dart';
@@ -67,12 +69,18 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           AppCard(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: _SettingTile(
-              icon: Icons.cloud_sync_outlined,
-              title: 'Sign in to sync',
-              subtitle: 'Back up and sync across devices',
-              onTap: () => context.push(AppRoutes.login),
-            ),
+            child: ref.watch(currentUserProvider) == null
+                ? _SettingTile(
+                    icon: Icons.cloud_sync_outlined,
+                    title: 'Sign in to sync',
+                    subtitle: 'Back up and sync across devices',
+                    onTap: () => context.go(AppRoutes.login),
+                  )
+                : _SettingTile(
+                    icon: Icons.logout,
+                    title: 'Log out',
+                    onTap: () => ref.read(authControllerProvider).signOut(),
+                  ),
           ),
           const SizedBox(height: AppSpacing.xl),
           Center(
@@ -180,12 +188,19 @@ IconData _themeIcon(ThemeMode mode) => switch (mode) {
       ThemeMode.dark => Icons.dark_mode_outlined,
     };
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final user = ref.watch(currentUserProvider);
+    final name = user?.userMetadata?['name'] as String?;
+    final title = (name != null && name.isNotEmpty)
+        ? name
+        : (user == null ? 'Local account' : (user.email ?? 'Your account'));
+    final subtitle = user == null ? 'Sign in to back up your data' : user.email;
+
     return AppCard(
       child: Row(
         children: [
@@ -203,12 +218,13 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Local account', style: theme.textTheme.titleMedium),
-                Text(
-                  'Sign in to back up your data',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.hintColor),
-                ),
+                Text(title, style: theme.textTheme.titleMedium),
+                if (subtitle != null && subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.hintColor),
+                  ),
               ],
             ),
           ),

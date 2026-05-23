@@ -30,9 +30,12 @@ Future<void> main() async {
 
   // Initialize the active currency symbol from prefs before first paint.
   container.read(currencyProvider);
-  // Seed default categories for the local user on first launch.
-  final userId = container.read(currentUserIdProvider);
-  await container.read(categoryRepositoryProvider).seedDefaultsIfEmpty(userId);
+  // In local-only mode, seed default categories now. In auth mode they're
+  // seeded for the user on sign-in.
+  if (!AppEnv.hasSupabase) {
+    final userId = container.read(currentUserIdProvider);
+    await container.read(categoryRepositoryProvider).seedDefaultsIfEmpty(userId);
+  }
 
   runApp(
     UncontrolledProviderScope(container: container, child: const FloApp()),
