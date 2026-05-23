@@ -1,3 +1,5 @@
+import 'package:flo/features/budgets/domain/entities/budget.dart';
+import 'package:flo/features/budgets/presentation/providers/budget_providers.dart';
 import 'package:flo/features/categories/domain/entities/category.dart';
 import 'package:flo/features/categories/presentation/providers/category_providers.dart';
 import 'package:flo/features/dashboard/presentation/screens/dashboard_screen.dart';
@@ -31,13 +33,14 @@ void main() {
               .overrideWith((ref) => Stream.value(const <String, int>{})),
           categoriesProvider
               .overrideWith((ref) => Stream.value(const <Category>[])),
+          budgetsProvider.overrideWith((ref) => Stream.value(const <Budget>[])),
         ],
         child: const MaterialApp(home: DashboardScreen()),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No expenses yet'), findsOneWidget);
+    expect(find.text('Start tracking'), findsOneWidget);
     expect(find.byType(ExpenseTile), findsNothing);
   });
 
@@ -59,6 +62,7 @@ void main() {
           categoryTotalsProvider
               .overrideWith((ref) => Stream.value(const {'c1': 1234})),
           categoriesProvider.overrideWith((ref) => Stream.value([food])),
+          budgetsProvider.overrideWith((ref) => Stream.value(const <Budget>[])),
         ],
         child: const MaterialApp(home: DashboardScreen()),
       ),
