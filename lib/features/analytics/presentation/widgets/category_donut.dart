@@ -8,11 +8,19 @@ import '../../../categories/domain/entities/category.dart';
 
 typedef CategorySlice = ({Category category, int cents});
 
-/// Donut of spending by category with a centered total and a legend.
+/// Donut of spending by category with a centered total. When [showLegend] is
+/// true a wrapped color-key legend is appended below.
 class CategoryDonut extends StatelessWidget {
-  const CategoryDonut({required this.slices, super.key});
+  const CategoryDonut({
+    required this.slices,
+    this.size = 200,
+    this.showLegend = true,
+    super.key,
+  });
 
   final List<CategorySlice> slices;
+  final double size;
+  final bool showLegend;
 
   @override
   Widget build(BuildContext context) {
@@ -21,50 +29,53 @@ class CategoryDonut extends StatelessWidget {
 
     if (total == 0) {
       return SizedBox(
-        height: 160,
+        height: size,
         child: Center(
-          child: Text(
-            'No spending in this period',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
-          ),
+          child: Text('No spending in this period',
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor)),
         ),
       );
     }
 
-    return Column(
-      children: [
-        SizedBox(
-          height: 200,
-          child: Stack(
-            alignment: Alignment.center,
+    final donut = SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          PieChart(
+            PieChartData(
+              sectionsSpace: 2,
+              centerSpaceRadius: size * 0.34,
+              sections: [
+                for (final s in slices)
+                  PieChartSectionData(
+                    value: s.cents.toDouble(),
+                    color: hexToColor(s.category.colorHex),
+                    radius: size * 0.13,
+                    showTitle: false,
+                  ),
+              ],
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              PieChart(
-                PieChartData(
-                  sectionsSpace: 2,
-                  centerSpaceRadius: 64,
-                  sections: [
-                    for (final s in slices)
-                      PieChartSectionData(
-                        value: s.cents.toDouble(),
-                        color: hexToColor(s.category.colorHex),
-                        radius: 26,
-                        showTitle: false,
-                      ),
-                  ],
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(formatCents(total), style: theme.textTheme.titleLarge),
-                  Text('total',
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: theme.hintColor)),
-                ],
-              ),
+              Text('SPENT',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.hintColor, letterSpacing: 0.5)),
+              Text(formatCents0(total), style: theme.textTheme.titleLarge),
             ],
           ),
-        ),
+        ],
+      ),
+    );
+
+    if (!showLegend) return donut;
+
+    return Column(
+      children: [
+        donut,
         const SizedBox(height: AppSpacing.lg),
         Wrap(
           spacing: AppSpacing.md,

@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/enums/budget_period.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../categories/domain/entities/category.dart';
 import '../../../categories/presentation/widgets/category_avatar.dart';
 import '../../domain/entities/budget.dart';
 
-/// Budget summary with an animated progress bar that warms amber → red as
-/// spending approaches and exceeds the limit.
+/// A budget row: category, remaining/over status, spent-of-limit, and an
+/// animated progress bar that warms amber → red as spending nears the limit.
 class BudgetCard extends StatelessWidget {
   const BudgetCard({
     required this.category,
@@ -33,11 +32,11 @@ class BudgetCard extends StatelessWidget {
     final progress = ratio.clamp(0.0, 1.0);
     final over = spentCents > limit;
     final remaining = limit - spentCents;
-    final color = switch (ratio) {
-      final r when r >= 1 => AppColors.danger,
-      final r when r >= 0.8 => AppColors.warning,
-      _ => AppColors.success,
-    };
+    final barColor = over
+        ? AppColors.danger
+        : ratio > 0.8
+            ? AppColors.warning
+            : theme.colorScheme.primary;
 
     return AppCard(
       onTap: onTap,
@@ -46,26 +45,40 @@ class BudgetCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              CategoryAvatar(iconKey: category.icon, colorHex: category.colorHex),
+              CategoryAvatar(
+                  iconKey: category.icon, colorHex: category.colorHex, size: 36),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(category.name, style: theme.textTheme.titleMedium),
+                    Text(category.name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
                     Text(
-                      budget.period == BudgetPeriod.monthly
-                          ? 'Monthly'
-                          : 'Weekly',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.hintColor),
+                      over
+                          ? 'Over by ${formatCents(spentCents - limit)}'
+                          : '${formatCents(remaining)} left',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: over ? AppColors.danger : theme.hintColor,
+                        fontWeight: over ? FontWeight.w600 : FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
               ),
-              if (over)
-                const Icon(Icons.warning_amber_rounded,
-                    color: AppColors.danger, size: 20),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(formatCents(spentCents),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                          fontSize: 14, fontWeight: FontWeight.w700)),
+                  Text('of ${formatCents0(limit)}',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: theme.hintColor)),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -74,34 +87,16 @@ class BudgetCard extends StatelessWidget {
             duration: const Duration(milliseconds: 650),
             curve: Curves.easeOutCubic,
             builder: (_, value, _) => ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadii.pill),
+              borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: value,
                 minHeight: 8,
-                backgroundColor: color.withValues(alpha: 0.15),
-                valueColor: AlwaysStoppedAnimation(color),
+                backgroundColor: theme.brightness == Brightness.dark
+                    ? AppColors.trackDark
+                    : AppColors.trackLight,
+                valueColor: AlwaysStoppedAnimation(barColor),
               ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${formatCents(spentCents)} of ${formatCents(limit)}',
-                style:
-                    theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
-              ),
-              Text(
-                over
-                    ? '${formatCents(spentCents - limit)} over'
-                    : '${formatCents(remaining)} left',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: over ? AppColors.danger : theme.colorScheme.onSurface,
-                ),
-              ),
-            ],
           ),
         ],
       ),
