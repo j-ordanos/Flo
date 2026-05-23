@@ -56,10 +56,15 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
   bool get _isEdit => widget.initial != null;
   bool get _canSave => _categoryId != null && _limitCents > 0 && !_saving;
 
-  void _onDigit(int d) =>
-      setState(() => _limitCents = (_limitCents * 10 + d).clamp(0, 99999999));
-
-  void _onBackspace() => setState(() => _limitCents = _limitCents ~/ 10);
+  void _onKey(String key) {
+    setState(() {
+      if (key == 'back') {
+        _limitCents = _limitCents ~/ 10;
+      } else if (key != '.') {
+        _limitCents = (_limitCents * 10 + int.parse(key)).clamp(0, 99999999);
+      }
+    });
+  }
 
   Future<void> _save() async {
     if (!_canSave) return;
@@ -145,7 +150,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
               onSelectionChanged: (s) => setState(() => _period = s.first),
             ),
             const SizedBox(height: AppSpacing.md),
-            NumPad(onDigit: _onDigit, onBackspace: _onBackspace),
+            NumPad(onKey: _onKey, showDecimal: false),
             const SizedBox(height: AppSpacing.md),
             FilledButton(
               onPressed: _canSave ? _save : null,

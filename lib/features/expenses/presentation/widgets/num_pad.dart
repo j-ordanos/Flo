@@ -1,55 +1,66 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 
-/// Calculator-style numeric keypad. Emits digit taps (0-9) and backspace.
+/// Calculator-style keypad. Emits '0'-'9', '.', or 'back'.
 class NumPad extends StatelessWidget {
-  const NumPad({required this.onDigit, required this.onBackspace, super.key});
+  const NumPad({required this.onKey, this.showDecimal = true, super.key});
 
-  final ValueChanged<int> onDigit;
-  final VoidCallback onBackspace;
+  final ValueChanged<String> onKey;
+  final bool showDecimal;
 
   @override
   Widget build(BuildContext context) {
+    final keys = [
+      '1', '2', '3', '4', '5', '6', '7', '8', '9',
+      showDecimal ? '.' : '', '0', 'back',
+    ];
     return GridView.count(
       crossAxisCount: 3,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 2,
-      mainAxisSpacing: AppSpacing.xs,
+      childAspectRatio: 1.9,
+      mainAxisSpacing: AppSpacing.sm,
       crossAxisSpacing: AppSpacing.sm,
       children: [
-        for (var i = 1; i <= 9; i++)
-          _NumKey(label: '$i', onTap: () => onDigit(i)),
-        const SizedBox.shrink(),
-        _NumKey(label: '0', onTap: () => onDigit(0)),
-        _NumKey(icon: Icons.backspace_outlined, onTap: onBackspace),
+        for (final k in keys)
+          if (k.isEmpty)
+            const SizedBox.shrink()
+          else
+            _Key(label: k, onKey: onKey),
       ],
     );
   }
 }
 
-class _NumKey extends StatelessWidget {
-  const _NumKey({required this.onTap, this.label, this.icon});
+class _Key extends StatelessWidget {
+  const _Key({required this.label, required this.onKey});
 
-  final VoidCallback onTap;
-  final String? label;
-  final IconData? icon;
+  final String label;
+  final ValueChanged<String> onKey;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.md),
-      child: Center(
-        child: icon != null
-            ? Icon(icon, size: 26)
-            : Text(
-                label!,
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
+    final dark = theme.brightness == Brightness.dark;
+    final isBack = label == 'back';
+    return Material(
+      color: dark ? AppColors.darkSurfaceAlt : AppColors.lightSurfaceAlt,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => onKey(label),
+        child: Center(
+          child: isBack
+              ? const Icon(Icons.backspace_outlined,
+                  size: 22, color: AppColors.danger)
+              : Text(
+                  label,
+                  style: theme.textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+        ),
       ),
     );
   }

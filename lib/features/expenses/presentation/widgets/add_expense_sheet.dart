@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/enums/sync_status.dart';
 import '../../../../core/providers/session_provider.dart';
@@ -24,7 +25,7 @@ Future<void> showAddExpenseSheet(BuildContext context, {Expense? initial}) {
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.sheet)),
     ),
     builder: (_) => AddExpenseSheet(initial: initial),
   );
@@ -40,7 +41,9 @@ class AddExpenseSheet extends ConsumerStatefulWidget {
 }
 
 class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
-  late int _amountCents = widget.initial?.amountCents ?? 0;
+  late String _amount = widget.initial == null
+      ? '0'
+      : (widget.initial!.amountCents / 100).toStringAsFixed(2);
   late String? _categoryId = widget.initial?.categoryId;
   late DateTime _date = widget.initial?.date ?? DateTime.now();
   late final TextEditingController _note =
@@ -48,12 +51,23 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
   bool _saving = false;
 
   bool get _isEdit => widget.initial != null;
+  int get _amountCents => ((double.tryParse(_amount) ?? 0) * 100).round();
   bool get _canSave => _amountCents > 0 && _categoryId != null && !_saving;
 
-  void _onDigit(int d) =>
-      setState(() => _amountCents = (_amountCents * 10 + d).clamp(0, 99999999));
-
-  void _onBackspace() => setState(() => _amountCents = _amountCents ~/ 10);
+  void _onKey(String key) {
+    setState(() {
+      if (key == 'back') {
+        _amount = _amount.length <= 1 ? '0' : _amount.substring(0, _amount.length - 1);
+      } else if (key == '.') {
+        if (!_amount.contains('.')) _amount = '$_amount.';
+      } else {
+        // Limit to two decimal places.
+        final dot = _amount.indexOf('.');
+        if (dot != -1 && _amount.length - dot > 2) return;
+        _amount = _amount == '0' ? key : _amount + key;
+      }
+    });
+  }
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -74,29 +88,25 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
     final noteOrNull = note.isEmpty ? null : note;
 
     if (_isEdit) {
-      await repo.updateExpense(
-        widget.initial!.copyWith(
-          amountCents: _amountCents,
-          categoryId: _categoryId!,
-          note: noteOrNull,
-          date: _date,
-          updatedAt: now,
-          syncStatus: SyncStatus.pending,
-        ),
-      );
+      await repo.updateExpense(widget.initial!.copyWith(
+        amountCents: _amountCents,
+        categoryId: _categoryId!,
+        note: noteOrNull,
+        date: _date,
+        updatedAt: now,
+        syncStatus: SyncStatus.pending,
+      ));
     } else {
-      await repo.addExpense(
-        Expense(
-          id: const Uuid().v4(),
-          userId: ref.read(currentUserIdProvider),
-          amountCents: _amountCents,
-          categoryId: _categoryId!,
-          note: noteOrNull,
-          date: _date,
-          createdAt: now,
-          updatedAt: now,
-        ),
-      );
+      await repo.addExpense(Expense(
+        id: const Uuid().v4(),
+        userId: ref.read(currentUserIdProvider),
+        amountCents: _amountCents,
+        categoryId: _categoryId!,
+        note: noteOrNull,
+        date: _date,
+        createdAt: now,
+        updatedAt: now,
+      ));
     }
     await HapticFeedback.mediumImpact();
     if (mounted) Navigator.of(context).pop();
@@ -113,6 +123,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
     final theme = Theme.of(context);
     final categories =
         ref.watch(categoriesProvider).value ?? const <Category>[];
+    final isZero = _amountCents == 0;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -125,44 +136,70 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              _isEdit ? 'Edit expense' : 'Add expense',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium,
+            Center(
+              child: Text(_isEdit ? 'Edit expense' : 'New expense',
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700)),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text(
-              formatCents(_amountCents),
-              textAlign: TextAlign.center,
-              style: theme.textTheme.displaySmall
-                  ?.copyWith(fontWeight: FontWeight.w700),
+            Text('AMOUNT',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: theme.hintColor, letterSpacing: 0.6)),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, right: 2),
+                  child: Text(Money.symbol,
+                      style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w600,
+                          color: theme.hintColor)),
+                ),
+                Text(
+                  _amount,
+                  style: TextStyle(
+                    fontSize: 52,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1.5,
+                    color: isZero ? theme.hintColor : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.lg),
+            Text('CATEGORY',
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: theme.hintColor, letterSpacing: 0.4)),
+            const SizedBox(height: AppSpacing.sm),
             _CategoryGrid(
               categories: categories,
               selectedId: _categoryId,
               onSelect: (id) => setState(() => _categoryId = id),
             ),
             const SizedBox(height: AppSpacing.md),
-            TextField(
-              controller: _note,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                hintText: 'Note (optional)',
-                prefixIcon: Icon(Icons.notes_outlined),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _note,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      hintText: 'Add a note',
+                      prefixIcon: Icon(Icons.edit_outlined, size: 18),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                _DateButton(date: _date, onTap: _pickDate),
+              ],
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: _pickDate,
-                icon: const Icon(Icons.calendar_today_outlined, size: 18),
-                label: Text(_friendlyDate(_date)),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            NumPad(onDigit: _onDigit, onBackspace: _onBackspace),
+            const SizedBox(height: AppSpacing.md),
+            NumPad(onKey: _onKey),
             const SizedBox(height: AppSpacing.md),
             FilledButton(
               onPressed: _canSave ? _save : null,
@@ -181,12 +218,41 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
   }
 }
 
-String _friendlyDate(DateTime d) {
-  final now = DateTime.now();
-  if (d.year == now.year && d.month == now.month && d.day == now.day) {
-    return 'Today';
+class _DateButton extends StatelessWidget {
+  const _DateButton({required this.date, required this.onTap});
+
+  final DateTime date;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final now = DateTime.now();
+    final isToday =
+        date.year == now.year && date.month == now.month && date.day == now.day;
+    return Material(
+      color: dark ? AppColors.darkSurfaceAlt : AppColors.lightSurfaceAlt,
+      borderRadius: BorderRadius.circular(AppRadii.button),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.calendar_today_outlined, size: 16, color: theme.hintColor),
+              const SizedBox(width: AppSpacing.sm),
+              Text(isToday ? 'Today' : DateFormat.MMMd().format(date),
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
-  return DateFormat.yMMMd().format(d);
 }
 
 class _CategoryGrid extends StatelessWidget {
@@ -214,10 +280,10 @@ class _CategoryGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: AppSpacing.sm,
       crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 0.78,
+      childAspectRatio: 0.82,
       children: [
         for (final c in categories)
-          _CategoryChip(
+          _CategoryTile(
             category: c,
             selected: c.id == selectedId,
             onTap: () => onSelect(c.id),
@@ -227,8 +293,8 @@ class _CategoryGrid extends StatelessWidget {
   }
 }
 
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
+class _CategoryTile extends StatelessWidget {
+  const _CategoryTile({
     required this.category,
     required this.selected,
     required this.onTap,
@@ -241,37 +307,39 @@ class _CategoryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.md),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: selected ? theme.colorScheme.primary : Colors.transparent,
-                width: 2,
+    final dark = theme.brightness == Brightness.dark;
+    return Material(
+      color: dark ? AppColors.darkSurfaceAlt : AppColors.lightSurfaceAlt,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(
+          color: selected ? theme.colorScheme.primary : Colors.transparent,
+          width: 1.5,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CategoryAvatar(
+                  iconKey: category.icon, colorHex: category.colorHex, size: 36),
+              const SizedBox(height: 6),
+              Text(
+                category.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: selected ? theme.colorScheme.primary : null,
+                ),
               ),
-            ),
-            child: CategoryAvatar(
-              iconKey: category.icon,
-              colorHex: category.colorHex,
-              size: 44,
-            ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            category.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
