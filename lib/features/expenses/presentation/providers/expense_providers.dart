@@ -43,6 +43,14 @@ final categoryTotalsProvider =
   );
 });
 
+/// Previous calendar month's total — drives the dashboard trend chip.
+final lastMonthTotalProvider = StreamProvider.autoDispose<int>((ref) {
+  final repo = ref.watch(expenseRepositoryProvider);
+  final month = ref.watch(currentMonthProvider);
+  final prev = DateTime(month.year, month.month - 1);
+  return repo.watchMonthlyTotal(ref.watch(currentUserIdProvider), prev);
+});
+
 final expenseByIdProvider =
     StreamProvider.autoDispose.family<Expense?, String>((ref, id) {
   return ref.watch(expenseRepositoryProvider).watchExpense(id);

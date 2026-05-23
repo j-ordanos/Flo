@@ -13,3 +13,8 @@ class Money {
 String formatCents(int cents, {String? symbol}) =>
     NumberFormat.currency(symbol: symbol ?? Money.symbol, decimalDigits: 2)
         .format(cents / 100);
+
+/// Like [formatCents] but rounded to whole units (e.g. `$1,647`).
+String formatCents0(int cents, {String? symbol}) =>
+    NumberFormat.currency(symbol: symbol ?? Money.symbol, decimalDigits: 0)
+        .format(cents / 100);

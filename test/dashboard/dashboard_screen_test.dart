@@ -29,6 +29,7 @@ void main() {
           expensesProvider
               .overrideWith((ref) => Stream.value(const <Expense>[])),
           monthlyTotalProvider.overrideWith((ref) => Stream.value(0)),
+          lastMonthTotalProvider.overrideWith((ref) => Stream.value(0)),
           categoryTotalsProvider
               .overrideWith((ref) => Stream.value(const <String, int>{})),
           categoriesProvider
@@ -40,7 +41,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Start tracking'), findsOneWidget);
+    expect(find.text('Your month, fresh'), findsOneWidget);
     expect(find.byType(ExpenseTile), findsNothing);
   });
 
@@ -59,6 +60,7 @@ void main() {
         overrides: [
           expensesProvider.overrideWith((ref) => Stream.value([expense])),
           monthlyTotalProvider.overrideWith((ref) => Stream.value(1234)),
+          lastMonthTotalProvider.overrideWith((ref) => Stream.value(0)),
           categoryTotalsProvider
               .overrideWith((ref) => Stream.value(const {'c1': 1234})),
           categoriesProvider.overrideWith((ref) => Stream.value([food])),
@@ -69,7 +71,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Recent'), findsOneWidget);
+    expect(find.text('Recent transactions'), findsOneWidget);
     expect(find.byType(ExpenseTile), findsOneWidget);
   });
 }

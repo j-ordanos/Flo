@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/enums/sync_status.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
 import '../../../categories/presentation/widgets/category_avatar.dart';
 import '../../domain/entities/expense.dart';
 
-/// A single expense row used in lists. Resolves its category for the avatar
-/// and falls back through merchant → note → category name for the title.
+/// A transaction row: category badge, merchant (→ note → category) title,
+/// "Category · date" subtitle, and a negative amount.
 class ExpenseTile extends ConsumerWidget {
   const ExpenseTile({required this.expense, this.onTap, super.key});
 
@@ -25,6 +24,10 @@ class ExpenseTile extends ConsumerWidget {
       Expense(:final note?) when note.isNotEmpty => note,
       _ => category?.name ?? 'Expense',
     };
+    final subtitle = [
+      if (category != null) category.name,
+      _relativeDate(expense.date),
+    ].join(' · ');
 
     return ListTile(
       onTap: onTap,
@@ -32,23 +35,29 @@ class ExpenseTile extends ConsumerWidget {
       leading: category == null
           ? const CircleAvatar(child: Icon(Icons.category_outlined))
           : CategoryAvatar(iconKey: category.icon, colorHex: category.colorHex),
-      title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(DateFormat.MMMd().format(expense.date)),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (expense.syncStatus == SyncStatus.pending)
-            Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: Icon(Icons.sync, size: 14, color: theme.hintColor),
-            ),
-          Text(
-            '-${formatCents(expense.amountCents)}',
-            style: theme.textTheme.titleSmall
-                ?.copyWith(fontWeight: FontWeight.w600),
-          ),
-        ],
+      title: Text(title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleMedium?.copyWith(fontSize: 15)),
+      subtitle: Text(subtitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
+      trailing: Text(
+        '-${formatCents(expense.amountCents)}',
+        style: theme.textTheme.titleMedium
+            ?.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
       ),
     );
   }
+}
+
+String _relativeDate(DateTime date) {
+  final now = DateTime.now();
+  final d = DateTime(date.year, date.month, date.day);
+  final today = DateTime(now.year, now.month, now.day);
+  final diff = today.difference(d).inDays;
+  if (diff == 0) return 'Today';
+  if (diff == 1) return 'Yesterday';
+  return DateFormat.MMMd().format(date);
 }

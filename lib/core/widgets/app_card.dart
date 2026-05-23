@@ -34,7 +34,6 @@ class AppCard extends StatelessWidget {
       ),
       child: Material(
         color: color ?? theme.colorScheme.surface,
-        borderRadius: border,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: border,

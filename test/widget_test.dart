@@ -1,4 +1,6 @@
 import 'package:flo/core/providers/preferences_provider.dart';
+import 'package:flo/features/budgets/domain/entities/budget.dart';
+import 'package:flo/features/budgets/presentation/providers/budget_providers.dart';
 import 'package:flo/features/categories/domain/entities/category.dart';
 import 'package:flo/features/categories/presentation/providers/category_providers.dart';
 import 'package:flo/features/expenses/domain/entities/expense.dart';
@@ -22,8 +24,10 @@ void main() {
           expensesProvider
               .overrideWith((ref) => Stream.value(const <Expense>[])),
           monthlyTotalProvider.overrideWith((ref) => Stream.value(0)),
+          lastMonthTotalProvider.overrideWith((ref) => Stream.value(0)),
           categoriesProvider
               .overrideWith((ref) => Stream.value(const <Category>[])),
+          budgetsProvider.overrideWith((ref) => Stream.value(const <Budget>[])),
         ],
         child: const FloApp(),
       ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/constants/app_gradients.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/widgets/app_card.dart';
@@ -14,8 +14,9 @@ import '../../../expenses/domain/entities/expense.dart';
 import '../../../expenses/presentation/providers/expense_providers.dart';
 import '../../../expenses/presentation/widgets/add_expense_sheet.dart';
 import '../../../expenses/presentation/widgets/expense_tile.dart';
-import '../widgets/category_spend_row.dart';
-import '../widgets/dashboard_hero_card.dart';
+import '../widgets/budget_health_row.dart';
+import '../widgets/home_header.dart';
+import '../widgets/spending_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -25,18 +26,16 @@ class DashboardScreen extends ConsumerWidget {
     final expensesAsync = ref.watch(expensesProvider);
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showAddExpenseSheet(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Add'),
-      ),
+      floatingActionButton: _GlowFab(onPressed: () => showAddExpenseSheet(context)),
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           onRefresh: () async {
             ref
               ..invalidate(expensesProvider)
               ..invalidate(monthlyTotalProvider)
-              ..invalidate(categoryTotalsProvider);
+              ..invalidate(categoryTotalsProvider)
+              ..invalidate(lastMonthTotalProvider);
           },
           child: expensesAsync.when(
             loading: () => const ShimmerList(),
@@ -61,95 +60,85 @@ class _Body extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final spent = ref.watch(monthlyTotalProvider).value ?? 0;
     final budget = ref.watch(monthlyBudgetTotalProvider);
+    final lastMonth = ref.watch(lastMonthTotalProvider).value ?? 0;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.md,
-        96,
-      ),
+      padding: const EdgeInsets.only(bottom: 96),
       children: [
-        const _GreetingHeader(),
+        const HomeHeader(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: SpendingCard(
+            spentCents: spent,
+            budgetCents: budget,
+            lastMonthCents: lastMonth,
+          ),
+        ),
         const SizedBox(height: AppSpacing.lg),
-        DashboardHeroCard(spentCents: spent, budgetCents: budget),
-        const SizedBox(height: AppSpacing.xl),
         if (expenses.isEmpty)
           const _EmptyState()
         else ...[
-          const CategorySpendRow(),
-          const SizedBox(height: AppSpacing.xl),
-          const SectionHeader(title: 'Recent'),
-          const SizedBox(height: AppSpacing.sm),
-          _RecentList(expenses: expenses.take(10).toList()),
-        ],
-      ],
-    );
-  }
-}
-
-class _GreetingHeader extends StatelessWidget {
-  const _GreetingHeader();
-
-  String get _greeting {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _greeting,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.hintColor),
-              ),
-              Text('Your money', style: theme.textTheme.headlineSmall),
-            ],
-          ),
-        ),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: const BoxDecoration(
-            gradient: AppGradients.brand,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.bolt, color: Colors.white),
-        ),
-      ],
-    );
-  }
-}
-
-class _RecentList extends StatelessWidget {
-  const _RecentList({required this.expenses});
-
-  final List<Expense> expenses;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        children: [
-          for (var i = 0; i < expenses.length; i++) ...[
-            if (i > 0) const Divider(height: 1),
-            ExpenseTile(
-              expense: expenses[i],
-              onTap: () => context
-                  .push(AppRoutes.transactionDetailPath(expenses[i].id)),
+          const BudgetHealthRow(),
+          const SizedBox(height: AppSpacing.lg),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SectionHeader(title: 'Recent transactions'),
+                const SizedBox(height: AppSpacing.sm),
+                AppCard(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < expenses.take(6).length; i++) ...[
+                        if (i > 0) const Divider(height: 1),
+                        ExpenseTile(
+                          expense: expenses[i],
+                          onTap: () => context.push(
+                              AppRoutes.transactionDetailPath(expenses[i].id)),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ],
+      ],
+    );
+  }
+}
+
+class _GlowFab extends StatelessWidget {
+  const _GlowFab({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x6B4F46E5), // indigo @ ~42%
+            blurRadius: 24,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: FloatingActionButton(
+        onPressed: onPressed,
+        elevation: 0,
+        highlightElevation: 0,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        shape: const CircleBorder(),
+        tooltip: 'Add expense',
+        child: const Icon(Icons.add, size: 26),
       ),
     );
   }
@@ -161,41 +150,38 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.xxl),
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 80),
       child: Column(
         children: [
           Container(
-            width: 88,
-            height: 88,
+            width: 132,
+            height: 132,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              gradient: AppGradients.brand,
+              color: dark ? AppColors.primarySoftDark : AppColors.primarySoft,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12),
-                ),
-              ],
             ),
-            child: const Icon(Icons.savings_outlined,
-                color: Colors.white, size: 40),
+            child: Icon(Icons.account_balance_wallet_outlined,
+                size: 56, color: theme.colorScheme.primary),
           ),
           const SizedBox(height: AppSpacing.lg),
-          Text('Start tracking', style: theme.textTheme.titleLarge),
-          const SizedBox(height: AppSpacing.xs),
+          Text('Your month, fresh', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: AppSpacing.sm),
           Text(
-            'Add your first expense to see your\nspending come to life.',
+            'Add your first expense to see Flo come to life. '
+            "We'll handle the categorising.",
             textAlign: TextAlign.center,
-            style:
-                theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
           ),
           const SizedBox(height: AppSpacing.lg),
-          FilledButton.icon(
-            onPressed: () => showAddExpenseSheet(context),
-            icon: const Icon(Icons.add),
-            label: const Text('Add expense'),
+          Builder(
+            builder: (context) => FilledButton.icon(
+              onPressed: () => showAddExpenseSheet(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Add your first expense'),
+            ),
           ),
         ],
       ),
