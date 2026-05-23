@@ -13,7 +13,7 @@ abstract final class AppTheme {
 
   static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final textTheme = AppTypography.textTheme(brightness);
+    final textTheme = _tunedText(AppTypography.textTheme(brightness));
 
     final colorScheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
@@ -21,7 +21,12 @@ abstract final class AppTheme {
       primary: AppColors.primary,
       error: AppColors.danger,
       surface: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+      onSurface:
+          isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
     );
+
+    final inputFill = isDark ? const Color(0xFF243049) : const Color(0xFFF1F3F5);
+    final border = isDark ? AppColors.borderDark : AppColors.borderLight;
 
     return ThemeData(
       useMaterial3: true,
@@ -30,6 +35,7 @@ abstract final class AppTheme {
       textTheme: textTheme,
       scaffoldBackgroundColor:
           isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(
         backgroundColor:
             isDark ? AppColors.darkBackground : AppColors.lightBackground,
@@ -49,49 +55,105 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.circular(AppRadii.card),
         ),
       ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          minimumSize: const Size.fromHeight(54),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.button),
+          ),
+          textStyle:
+              textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
+          minimumSize: const Size.fromHeight(54),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.button),
           ),
           textStyle:
-              textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+              textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          minimumSize: const Size.fromHeight(50),
+          side: BorderSide(color: border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.button),
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-        border: _inputBorder(isDark),
-        enabledBorder: _inputBorder(isDark),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadii.button),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        fillColor: inputFill,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
         ),
+        border: _inputBorder(Colors.transparent),
+        enabledBorder: _inputBorder(Colors.transparent),
+        focusedBorder: _inputBorder(AppColors.primary, width: 1.5),
+        hintStyle: textTheme.bodyMedium?.copyWith(color: _hintColor(isDark)),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+        height: 70,
+        backgroundColor:
+            isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.14),
         elevation: 0,
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+        labelTextStyle: WidgetStatePropertyAll(
+          textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
       ),
-      dividerTheme: DividerThemeData(
-        color: isDark ? AppColors.borderDark : AppColors.borderLight,
-        space: 1,
-        thickness: 1,
+      dividerTheme: DividerThemeData(color: border, space: 1, thickness: 1),
+      chipTheme: ChipThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+        ),
+        side: BorderSide(color: border),
+      ),
+      dialogTheme: DialogThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.card),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        showDragHandle: true,
+        clipBehavior: Clip.antiAlias,
       ),
     );
   }
 
-  static OutlineInputBorder _inputBorder(bool isDark) => OutlineInputBorder(
+  static Color _hintColor(bool isDark) =>
+      isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
+  static OutlineInputBorder _inputBorder(Color color, {double width = 1}) =>
+      OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.button),
-        borderSide: BorderSide(
-          color: isDark ? AppColors.borderDark : AppColors.borderLight,
-        ),
+        borderSide: BorderSide(color: color, width: width),
+      );
+
+  /// Tighter tracking + heavier headings for a more polished hierarchy.
+  static TextTheme _tunedText(TextTheme base) => base.copyWith(
+        displaySmall: base.displaySmall
+            ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -1),
+        headlineMedium: base.headlineMedium
+            ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.5),
+        headlineSmall: base.headlineSmall
+            ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.5),
+        titleLarge: base.titleLarge
+            ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.3),
+        titleMedium:
+            base.titleMedium?.copyWith(fontWeight: FontWeight.w600),
       );
 }
