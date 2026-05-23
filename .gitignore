@@ -44,6 +44,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Private planning docs (kept local, never pushed)
+/PLAN.md
+/design.txt
+/plan.txt
+
 # Environment / secrets — never commit real keys (example.json is committed)
 /env/*
 !/env/example.json

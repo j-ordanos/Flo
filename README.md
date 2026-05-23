@@ -9,7 +9,7 @@ inspired by Monzo and YNAB.
 - **fl_chart** (analytics) · **freezed** + codegen · **intl** (formatting)
 
 Architecture: **Clean Architecture**, feature-first (`domain` / `data` /
-`presentation`). See [PLAN.md](PLAN.md) for the full phased build plan.
+`presentation`).
 
 ## Getting started
 ```bash
