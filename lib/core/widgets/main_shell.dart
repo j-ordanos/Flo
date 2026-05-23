@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../router/app_routes.dart';
-
 /// Bottom-navigation shell hosting the four primary branches:
-/// Home / Analytics / Budgets / Profile.
+/// Home / Analytics / Budgets / Profile. The quick-add FAB lives on the
+/// dashboard branch itself.
 class MainShell extends StatelessWidget {
   const MainShell({required this.navigationShell, super.key});
 
@@ -20,16 +19,8 @@ class MainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isHome = navigationShell.currentIndex == 0;
     return Scaffold(
       body: navigationShell,
-      floatingActionButton: isHome
-          ? FloatingActionButton(
-              onPressed: () => context.push(AppRoutes.addExpense),
-              tooltip: 'Add expense',
-              child: const Icon(Icons.add),
-            )
-          : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: _onDestinationSelected,
