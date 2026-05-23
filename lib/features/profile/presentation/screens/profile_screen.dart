@@ -2,105 +2,212 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_gradients.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/money/currency.dart';
 import '../../../../core/providers/session_provider.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
 import '../../../expenses/presentation/providers/expense_providers.dart';
 import '../providers/settings_providers.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _faceId = false;
+  bool _push = true;
+  bool _budgetAlerts = true;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final user = ref.watch(currentUserProvider);
     final currency = ref.watch(currencyProvider);
-    final themeMode = ref.watch(themeModeProvider);
+    final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
+
+    final name = (user?.userMetadata?['name'] as String?) ??
+        user?.email?.split('@').first ??
+        'Local account';
+    final email = user?.email ?? 'Sign in to back up your data';
+
+    final expenseCount = ref.watch(expensesProvider).value?.length ?? 0;
+    final categoryCount = ref.watch(categoriesProvider).value?.length ?? 0;
+    final monthSpent = ref.watch(monthlyTotalProvider).value ?? 0;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        children: [
-          const _Header(),
-          const SizedBox(height: AppSpacing.xl),
-          const _SectionLabel('Preferences'),
-          const SizedBox(height: AppSpacing.sm),
-          AppCard(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: Column(
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 100),
+          children: [
+            Text('Profile', style: theme.textTheme.headlineSmall),
+            const SizedBox(height: AppSpacing.md),
+            AppCard(
+              child: Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      gradient: AppGradients.brand,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(_initials(name),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 20)),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 2),
+                        Text(email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall
+                                ?.copyWith(color: theme.hintColor)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
               children: [
-                _SettingTile(
-                  icon: Icons.payments_outlined,
-                  title: 'Currency',
-                  trailing: Text('${currency.code}  ${currency.symbol}'),
-                  onTap: () => _pickCurrency(context, ref),
-                ),
-                const Divider(height: 1),
-                _SettingTile(
-                  icon: Icons.brightness_6_outlined,
-                  title: 'Appearance',
-                  trailing: Text(_themeLabel(themeMode)),
-                  onTap: () => _pickTheme(context, ref),
-                ),
-                const Divider(height: 1),
-                const _NotificationsTile(),
+                _Stat(label: 'This month', value: formatCents0(monthSpent)),
+                const SizedBox(width: AppSpacing.sm),
+                _Stat(label: 'Expenses', value: '$expenseCount'),
+                const SizedBox(width: AppSpacing.sm),
+                _Stat(label: 'Categories', value: '$categoryCount'),
               ],
             ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          const _SectionLabel('Data'),
-          const SizedBox(height: AppSpacing.sm),
-          AppCard(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: _SettingTile(
-              icon: Icons.ios_share,
-              title: 'Export expenses (CSV)',
-              onTap: () => _export(ref),
+            const SizedBox(height: AppSpacing.lg),
+            const _SectionLabel('Preferences'),
+            const SizedBox(height: AppSpacing.sm),
+            _Group(children: [
+              _SettingsRow(
+                icon: Icons.payments_outlined,
+                tint: AppColors.primary,
+                label: 'Currency',
+                detail: '${currency.code} · ${currency.symbol}',
+                onTap: _pickCurrency,
+              ),
+              _SettingsRow(
+                icon: Icons.dark_mode_outlined,
+                tint: AppColors.primary,
+                label: 'Dark mode',
+                trailing: Switch(
+                  value: isDark,
+                  onChanged: (v) => ref
+                      .read(themeModeProvider.notifier)
+                      .set(v ? ThemeMode.dark : ThemeMode.light),
+                ),
+              ),
+              _SettingsRow(
+                icon: Icons.fingerprint,
+                tint: AppColors.success,
+                label: 'Face ID',
+                trailing: Switch(
+                    value: _faceId,
+                    onChanged: (v) => setState(() => _faceId = v)),
+              ),
+            ]),
+            const SizedBox(height: AppSpacing.lg),
+            const _SectionLabel('Notifications'),
+            const SizedBox(height: AppSpacing.sm),
+            _Group(children: [
+              _SettingsRow(
+                icon: Icons.notifications_outlined,
+                tint: AppColors.warning,
+                label: 'Push notifications',
+                trailing: Switch(
+                    value: _push, onChanged: (v) => setState(() => _push = v)),
+              ),
+              _SettingsRow(
+                icon: Icons.warning_amber_rounded,
+                tint: AppColors.danger,
+                label: 'Budget alerts',
+                trailing: Switch(
+                    value: _budgetAlerts,
+                    onChanged: (v) => setState(() => _budgetAlerts = v)),
+              ),
+            ]),
+            const SizedBox(height: AppSpacing.lg),
+            const _SectionLabel('Data'),
+            const SizedBox(height: AppSpacing.sm),
+            _Group(children: [
+              _SettingsRow(
+                icon: Icons.ios_share,
+                tint: AppColors.primary,
+                label: 'Export as CSV',
+                onTap: _exportCsv,
+              ),
+              _SettingsRow(
+                icon: Icons.picture_as_pdf_outlined,
+                tint: AppColors.primary,
+                label: 'Export as PDF',
+                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('PDF export is coming soon.')),
+                ),
+              ),
+            ]),
+            const SizedBox(height: AppSpacing.lg),
+            _Group(children: [
+              if (user == null)
+                _SettingsRow(
+                  icon: Icons.cloud_sync_outlined,
+                  tint: AppColors.primary,
+                  label: 'Sign in to sync',
+                  onTap: () => context.go(AppRoutes.login),
+                )
+              else
+                _SettingsRow(
+                  icon: Icons.logout,
+                  tint: AppColors.danger,
+                  label: 'Log out',
+                  danger: true,
+                  onTap: () => ref.read(authControllerProvider).signOut(),
+                ),
+            ]),
+            const SizedBox(height: AppSpacing.lg),
+            Center(
+              child: Text('Flo · v1.0.0 · Made with care',
+                  style: theme.textTheme.labelSmall
+                      ?.copyWith(color: theme.hintColor)),
             ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          const _SectionLabel('Account'),
-          const SizedBox(height: AppSpacing.sm),
-          AppCard(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: ref.watch(currentUserProvider) == null
-                ? _SettingTile(
-                    icon: Icons.cloud_sync_outlined,
-                    title: 'Sign in to sync',
-                    subtitle: 'Back up and sync across devices',
-                    onTap: () => context.go(AppRoutes.login),
-                  )
-                : _SettingTile(
-                    icon: Icons.logout,
-                    title: 'Log out',
-                    onTap: () => ref.read(authControllerProvider).signOut(),
-                  ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Center(
-            child: Text(
-              'Flo · v1.0.0',
-              style: theme.textTheme.labelSmall?.copyWith(color: theme.hintColor),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Future<void> _export(WidgetRef ref) async {
+  Future<void> _exportCsv() async {
     final expenses = ref.read(expensesProvider).value ?? const [];
     final categories = ref.read(categoriesByIdProvider);
     await ref.read(csvExportServiceProvider).exportExpenses(expenses, categories);
   }
 
-  Future<void> _pickCurrency(BuildContext context, WidgetRef ref) async {
+  Future<void> _pickCurrency() async {
     final current = ref.read(currencyProvider);
     await showModalBottomSheet<void>(
       context: context,
@@ -110,9 +217,7 @@ class ProfileScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Text('Currency'),
-            ),
+                padding: EdgeInsets.all(AppSpacing.md), child: Text('Currency')),
             Flexible(
               child: ListView(
                 shrinkWrap: true,
@@ -120,9 +225,9 @@ class ProfileScreen extends ConsumerWidget {
                   for (final c in kCurrencies)
                     ListTile(
                       leading: SizedBox(
-                        width: 28,
-                        child: Text(c.symbol, textAlign: TextAlign.center),
-                      ),
+                          width: 28,
+                          child:
+                              Text(c.symbol, textAlign: TextAlign.center)),
                       title: Text(c.name),
                       subtitle: Text(c.code),
                       trailing: c.code == current.code
@@ -143,92 +248,42 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _pickTheme(BuildContext context, WidgetRef ref) async {
-    final current = ref.read(themeModeProvider);
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Text('Appearance'),
-            ),
-            for (final mode in ThemeMode.values)
-              ListTile(
-                leading: Icon(_themeIcon(mode)),
-                title: Text(_themeLabel(mode)),
-                trailing: mode == current
-                    ? Icon(Icons.check,
-                        color: Theme.of(ctx).colorScheme.primary)
-                    : null,
-                onTap: () {
-                  ref.read(themeModeProvider.notifier).set(mode);
-                  Navigator.pop(ctx);
-                },
-              ),
-          ],
-        ),
-      ),
-    );
+  static String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return 'F';
+    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+    return (parts.first.characters.first + parts[1].characters.first)
+        .toUpperCase();
   }
 }
 
-String _themeLabel(ThemeMode mode) => switch (mode) {
-      ThemeMode.system => 'System',
-      ThemeMode.light => 'Light',
-      ThemeMode.dark => 'Dark',
-    };
+class _Stat extends StatelessWidget {
+  const _Stat({required this.label, required this.value});
 
-IconData _themeIcon(ThemeMode mode) => switch (mode) {
-      ThemeMode.system => Icons.brightness_auto_outlined,
-      ThemeMode.light => Icons.light_mode_outlined,
-      ThemeMode.dark => Icons.dark_mode_outlined,
-    };
-
-class _Header extends ConsumerWidget {
-  const _Header();
+  final String label;
+  final String value;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final user = ref.watch(currentUserProvider);
-    final name = user?.userMetadata?['name'] as String?;
-    final title = (name != null && name.isNotEmpty)
-        ? name
-        : (user == null ? 'Local account' : (user.email ?? 'Your account'));
-    final subtitle = user == null ? 'Sign in to back up your data' : user.email;
-
-    return AppCard(
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: const BoxDecoration(
-              gradient: AppGradients.brand,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.person, color: Colors.white, size: 28),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: theme.textTheme.titleMedium),
-                if (subtitle != null && subtitle.isNotEmpty)
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.hintColor),
-                  ),
-              ],
-            ),
-          ),
-        ],
+    return Expanded(
+      child: AppCard(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: Column(
+          children: [
+            Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    theme.textTheme.labelSmall?.copyWith(color: theme.hintColor)),
+            const SizedBox(height: 4),
+            Text(value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+          ],
+        ),
       ),
     );
   }
@@ -244,70 +299,93 @@ class _SectionLabel extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(left: AppSpacing.xs),
-      child: Text(
-        text.toUpperCase(),
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.hintColor,
-          letterSpacing: 0.8,
-          fontWeight: FontWeight.w700,
-        ),
+      child: Text(text.toUpperCase(),
+          style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.hintColor,
+              letterSpacing: 0.6,
+              fontWeight: FontWeight.w700)),
+    );
+  }
+}
+
+class _Group extends StatelessWidget {
+  const _Group({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const Divider(height: 1, indent: 56),
+            children[i],
+          ],
+        ],
       ),
     );
   }
 }
 
-class _SettingTile extends StatelessWidget {
-  const _SettingTile({
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({
     required this.icon,
-    required this.title,
-    this.subtitle,
+    required this.tint,
+    required this.label,
+    this.detail,
     this.trailing,
     this.onTap,
+    this.danger = false,
   });
 
   final IconData icon;
-  final String title;
-  final String? subtitle;
+  final Color tint;
+  final String label;
+  final String? detail;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      leading: Icon(icon, color: theme.colorScheme.primary),
-      title: Text(title),
-      subtitle: subtitle == null ? null : Text(subtitle!),
-      trailing: trailing ??
-          (onTap == null
-              ? null
-              : Icon(Icons.chevron_right, color: theme.hintColor)),
+    return InkWell(
       onTap: onTap,
-    );
-  }
-}
-
-class _NotificationsTile extends StatefulWidget {
-  const _NotificationsTile();
-
-  @override
-  State<_NotificationsTile> createState() => _NotificationsTileState();
-}
-
-class _NotificationsTileState extends State<_NotificationsTile> {
-  bool _enabled = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SwitchListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      secondary:
-          Icon(Icons.notifications_outlined, color: theme.colorScheme.primary),
-      title: const Text('Notifications'),
-      value: _enabled,
-      onChanged: (v) => setState(() => _enabled = v),
+      child: Padding(
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: tint.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(icon, size: 18, color: tint),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(label,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: danger ? AppColors.danger : null)),
+            ),
+            if (detail != null)
+              Text(detail!,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.hintColor)),
+            ?trailing,
+            if (trailing == null && onTap != null && detail == null)
+              Icon(Icons.chevron_right, color: theme.hintColor),
+          ],
+        ),
+      ),
     );
   }
 }

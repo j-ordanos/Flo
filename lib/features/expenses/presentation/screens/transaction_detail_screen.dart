@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/enums/sync_status.dart';
+import '../../../../core/utils/hex_color.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/state_views.dart';
+import '../../../categories/domain/entities/category.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
 import '../../../categories/presentation/widgets/category_avatar.dart';
 import '../../domain/entities/expense.dart';
@@ -18,67 +22,72 @@ class TransactionDetailScreen extends ConsumerWidget {
 
   final String expenseId;
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete expense?'),
-        content: const Text('This expense will be removed.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if ((confirmed ?? false) && context.mounted) {
-      await ref.read(expenseRepositoryProvider).deleteExpense(expenseId);
-      if (context.mounted) Navigator.of(context).pop();
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(expenseByIdProvider(expenseId));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Transaction'),
-        actions: [
-          IconButton(
-            tooltip: 'Edit',
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () {
-              final expense = ref.read(expenseByIdProvider(expenseId)).value;
-              if (expense != null) {
-                showAddExpenseSheet(context, initial: expense);
-              }
-            },
-          ),
-          IconButton(
-            tooltip: 'Delete',
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _confirmDelete(context, ref),
-          ),
-        ],
-      ),
-      body: async.when(
-        loading: () => const LoadingView(),
-        error: (_, _) => const ErrorView(message: 'Could not load transaction.'),
-        data: (expense) => expense == null
-            ? const EmptyView(
-                icon: Icons.search_off,
-                title: 'Not found',
-                message: 'This expense no longer exists.',
-              )
-            : _Details(expense: expense),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg, AppSpacing.xs, AppSpacing.lg, AppSpacing.sm),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _CircleButton(
+                      icon: Icons.arrow_back, onTap: () => context.pop()),
+                  _CircleButton(
+                    icon: Icons.delete_outline,
+                    onTap: () => _confirmDelete(context, ref, expenseId),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: async.when(
+                loading: () => const LoadingView(),
+                error: (_, _) =>
+                    const ErrorView(message: 'Could not load transaction.'),
+                data: (expense) => expense == null
+                    ? const EmptyView(
+                        icon: Icons.search_off,
+                        title: 'Not found',
+                        message: 'This expense no longer exists.',
+                      )
+                    : _Details(expense: expense),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+}
+
+Future<void> _confirmDelete(
+    BuildContext context, WidgetRef ref, String id) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Delete expense?'),
+      content: const Text('This expense will be removed.'),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel')),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+  if ((confirmed ?? false) && context.mounted) {
+    await ref.read(expenseRepositoryProvider).deleteExpense(id);
+    if (context.mounted) context.pop();
   }
 }
 
@@ -92,59 +101,166 @@ class _Details extends ConsumerWidget {
     final theme = Theme.of(context);
     final category = ref.watch(categoriesByIdProvider)[expense.categoryId];
     final synced = expense.syncStatus == SyncStatus.synced;
+    final title = expense.merchant?.isNotEmpty == true
+        ? expense.merchant!
+        : (category?.name ?? 'Expense');
 
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 24),
       children: [
+        const SizedBox(height: AppSpacing.md),
         if (category != null)
           Center(
             child: CategoryAvatar(
-              iconKey: category.icon,
-              colorHex: category.colorHex,
-              size: 72,
-            ),
+                iconKey: category.icon, colorHex: category.colorHex, size: 76),
           ),
         const SizedBox(height: AppSpacing.md),
-        Text(
-          formatCents(expense.amountCents),
-          textAlign: TextAlign.center,
-          style: theme.textTheme.displaySmall
-              ?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          category?.name ?? 'Uncategorized',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.titleMedium?.copyWith(color: theme.hintColor),
-        ),
+        Text(title,
+            textAlign: TextAlign.center,
+            style:
+                theme.textTheme.titleMedium?.copyWith(color: theme.hintColor)),
+        const SizedBox(height: 6),
+        Text('-${formatCents(expense.amountCents)}',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.displaySmall),
+        const SizedBox(height: AppSpacing.md),
+        if (category != null) Center(child: _CategoryPill(category: category)),
         const SizedBox(height: AppSpacing.lg),
         AppCard(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Column(
             children: [
-              _DetailRow(
-                icon: Icons.calendar_today_outlined,
-                label: 'Date',
-                value: DateFormat.yMMMMd().format(expense.date),
-              ),
-              if (expense.merchant?.isNotEmpty ?? false)
-                _DetailRow(
-                  icon: Icons.store_outlined,
-                  label: 'Merchant',
-                  value: expense.merchant!,
-                ),
-              if (expense.note?.isNotEmpty ?? false)
-                _DetailRow(
-                  icon: Icons.notes_outlined,
-                  label: 'Note',
-                  value: expense.note!,
-                ),
-              _DetailRow(
-                icon: synced ? Icons.cloud_done_outlined : Icons.sync,
-                label: 'Sync',
+              _Row(label: 'Date', value: DateFormat.yMMMMEEEEd().format(expense.date)),
+              const Divider(height: 1),
+              _Row(
+                label: 'Status',
                 value: synced ? 'Synced' : 'Pending',
+                valueColor: synced ? AppColors.success : AppColors.warning,
               ),
             ],
+          ),
+        ),
+        if (expense.note?.isNotEmpty == true) ...[
+          const SizedBox(height: AppSpacing.md),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('NOTE',
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: theme.hintColor, letterSpacing: 0.4)),
+                const SizedBox(height: 6),
+                Text(expense.note!, style: theme.textTheme.bodyLarge),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.md),
+        _ReceiptPlaceholder(),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () => showAddExpenseSheet(context, initial: expense),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Edit'),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.danger.withValues(alpha: 0.12),
+                  foregroundColor: AppColors.danger,
+                  elevation: 0,
+                ),
+                onPressed: () => _confirmDelete(context, ref, expense.id),
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('Delete'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CategoryPill extends StatelessWidget {
+  const _CategoryPill({required this.category});
+
+  final Category category;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = hexToColor(category.colorHex);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: dark ? 0.18 : 0.14),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(category.name,
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+}
+
+class _Row extends StatelessWidget {
+  const _Row({required this.label, required this.value, this.valueColor});
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor)),
+          Text(value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: valueColor ?? theme.colorScheme.onSurface)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReceiptPlaceholder extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('RECEIPT',
+            style: theme.textTheme.labelSmall
+                ?.copyWith(color: theme.hintColor, letterSpacing: 0.4)),
+        const SizedBox(height: AppSpacing.sm),
+        DottedPlaceholder(
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Receipts are coming soon.')),
           ),
         ),
       ],
@@ -152,27 +268,69 @@ class _Details extends ConsumerWidget {
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+class DottedPlaceholder extends StatelessWidget {
+  const DottedPlaceholder({required this.onTap, super.key});
 
-  final IconData icon;
-  final String label;
-  final String value;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(
-        label,
-        style: theme.textTheme.labelMedium?.copyWith(color: theme.hintColor),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadii.card),
+      child: Container(
+        height: 120,
+        decoration: BoxDecoration(
+          color: theme.brightness == Brightness.dark
+              ? AppColors.darkSurfaceAlt
+              : AppColors.lightBackground,
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          border: Border.all(
+            color: theme.brightness == Brightness.dark
+                ? AppColors.borderDark
+                : AppColors.borderLight,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.photo_camera_outlined, color: theme.hintColor),
+            const SizedBox(height: 6),
+            Text('Attach a receipt',
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            Text('Photo or PDF',
+                style:
+                    theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
+          ],
+        ),
       ),
-      subtitle: Text(value, style: theme.textTheme.bodyLarge),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  const _CircleButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: CircleBorder(side: BorderSide(color: theme.dividerColor)),
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(icon, size: 20, color: theme.colorScheme.onSurface),
+        ),
+      ),
     );
   }
 }
