@@ -5,8 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/widgets/flo_logo.dart';
 import '../providers/auth_providers.dart';
-import '../widgets/auth_header.dart';
 import '../widgets/or_divider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -30,11 +30,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref
           .read(authControllerProvider)
           .signIn(_email.text.trim(), _password.text);
-      // The router guard redirects to Home once the session is active.
     } on AuthException catch (e) {
-      _showError(e.message);
+      _snack(e.message);
     } catch (_) {
-      _showError('Something went wrong. Please try again.');
+      _snack('Something went wrong. Please try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -44,11 +43,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref.read(authControllerProvider).signInWithGoogle();
     } catch (_) {
-      _showError('Google sign-in is not available yet.');
+      _snack('Google sign-in is not available yet.');
     }
   }
 
-  void _showError(String message) {
+  void _snack(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -64,84 +63,117 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const AuthHeader(
-                    title: 'Welcome back',
-                    subtitle: 'Log in to sync your money across devices',
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    const FloLogo(size: 40),
+                    const SizedBox(width: 12),
+                    Text('Flo',
+                        style: theme.textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w700)),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Text('Welcome back', style: theme.textTheme.headlineMedium),
+                const SizedBox(height: AppSpacing.xs),
+                Text('Sign in to keep your money in flow.',
+                    style: theme.textTheme.bodyLarge
+                        ?.copyWith(color: theme.hintColor)),
+                const SizedBox(height: AppSpacing.xl),
+                TextFormField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.email],
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.mail_outline),
                   ),
-                  const SizedBox(height: AppSpacing.xl),
-                  TextFormField(
-                    controller: _email,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    autofillHints: const [AutofillHints.email],
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.mail_outline),
+                  validator: _emailValidator,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextFormField(
+                  controller: _password,
+                  obscureText: _obscure,
+                  autofillHints: const [AutofillHints.password],
+                  onFieldSubmitted: (_) => _submit(),
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined),
+                      onPressed: () => setState(() => _obscure = !_obscure),
                     ),
-                    validator: _emailValidator,
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  TextFormField(
-                    controller: _password,
-                    obscureText: _obscure,
-                    autofillHints: const [AutofillHints.password],
-                    onFieldSubmitted: (_) => _submit(),
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscure
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined),
-                        onPressed: () => setState(() => _obscure = !_obscure),
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Enter your password' : null,
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () =>
+                        _snack('Password reset is coming soon.'),
+                    child: const Text('Forgot password?'),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                FilledButton(
+                  onPressed: _loading ? null : _submit,
+                  child: _loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Sign in'),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                const OrDivider(label: 'OR CONTINUE WITH'),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _loading ? null : _google,
+                        icon: const Icon(Icons.g_mobiledata, size: 28),
+                        label: const Text('Google'),
                       ),
                     ),
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Enter your password' : null,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  FilledButton(
-                    onPressed: _loading ? null : _submit,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Log in'),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  const OrDivider(),
-                  const SizedBox(height: AppSpacing.lg),
-                  OutlinedButton.icon(
-                    onPressed: _loading ? null : _google,
-                    icon: const Icon(Icons.g_mobiledata, size: 28),
-                    label: const Text('Continue with Google'),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('New to Flo?',
-                          style: Theme.of(context).textTheme.bodyMedium),
-                      TextButton(
-                        onPressed: () => context.go(AppRoutes.signup),
-                        child: const Text('Create account'),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            _snack('Apple sign-in is coming soon.'),
+                        icon: const Icon(Icons.apple, size: 22),
+                        label: const Text('Apple'),
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('New to Flo?', style: theme.textTheme.bodyMedium),
+                    TextButton(
+                      onPressed: () => context.go(AppRoutes.signup),
+                      child: const Text('Create an account'),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
