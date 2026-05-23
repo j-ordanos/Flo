@@ -10,12 +10,14 @@ abstract final class AppSpacing {
   static const double xxl = 48;
 }
 
-/// Corner radii. Cards use a softer 20 for a more modern feel; buttons 14;
-/// pills 99.
+/// Corner radii from the Flo design tokens.
 abstract final class AppRadii {
   const AppRadii._();
 
-  static const double card = 20;
-  static const double button = 14;
+  static const double card = 16;
+  static const double cardLg = 20; // spending card / gradient overview
+  static const double button = 12;
+  static const double chip = 10;
+  static const double sheet = 28;
   static const double pill = 99;
 }

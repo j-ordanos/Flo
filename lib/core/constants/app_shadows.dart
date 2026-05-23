@@ -7,24 +7,17 @@ abstract final class AppShadows {
 
   static List<BoxShadow> card(Brightness brightness) =>
       brightness == Brightness.dark
-          ? const [
-              BoxShadow(
-                color: Color(0x40000000),
-                blurRadius: 18,
-                offset: Offset(0, 8),
-              ),
-            ]
+          ? const []
           : const [
               BoxShadow(
-                color: Color(0x14101828),
+                color: Color(0x0A0F172A), // rgba(15,23,42,0.04)
                 blurRadius: 24,
-                offset: Offset(0, 12),
-                spreadRadius: -6,
+                offset: Offset(0, 8),
               ),
               BoxShadow(
-                color: Color(0x0D101828),
-                blurRadius: 8,
-                offset: Offset(0, 2),
+                color: Color(0x0A0F172A),
+                blurRadius: 2,
+                offset: Offset(0, 1),
               ),
             ];
 
