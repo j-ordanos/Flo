@@ -4,6 +4,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 import '../enums/budget_period.dart';
 import '../enums/sync_operation.dart';
 import '../enums/sync_status.dart';
+import 'daos/budget_dao.dart';
 import 'daos/category_dao.dart';
 import 'daos/expense_dao.dart';
 import 'tables/budgets.dart';
@@ -15,7 +16,7 @@ part 'app_database.g.dart';
 
 @DriftDatabase(
   tables: [Expenses, Categories, Budgets, SyncQueue],
-  daos: [ExpenseDao, CategoryDao],
+  daos: [ExpenseDao, CategoryDao, BudgetDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// Pass a custom [executor] (e.g. an in-memory database) in tests.
