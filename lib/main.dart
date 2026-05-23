@@ -34,7 +34,9 @@ Future<void> main() async {
   // seeded for the user on sign-in.
   if (!AppEnv.hasSupabase) {
     final userId = container.read(currentUserIdProvider);
-    await container.read(categoryRepositoryProvider).seedDefaultsIfEmpty(userId);
+    final categories = container.read(categoryRepositoryProvider);
+    await categories.seedDefaultsIfEmpty(userId);
+    await categories.refreshDefaultStyles(userId);
   }
 
   runApp(

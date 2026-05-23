@@ -37,6 +37,13 @@ class CategoryRepositoryImpl implements CategoryRepository {
   }
 
   @override
+  Future<void> refreshDefaultStyles(String userId) async {
+    for (final d in kDefaultCategories) {
+      await _dao.setDefaultColor(userId, d.icon, d.colorHex);
+    }
+  }
+
+  @override
   Stream<List<Category>> watchCategories(String userId) => _dao
       .watchCategories(userId)
       .map((rows) => rows.map((r) => r.toEntity()).toList());

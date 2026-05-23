@@ -49,4 +49,25 @@ class CategoryDao extends DatabaseAccessor<AppDatabase> with _$CategoryDaoMixin 
           syncStatus: const Value(SyncStatus.pending),
         ),
       );
+
+  /// Updates a default category's color (matched by icon key) only when it
+  /// differs — keeps seeded categories in sync with the canonical palette.
+  Future<void> setDefaultColor(
+    String userId,
+    String iconKey,
+    String colorHex,
+  ) =>
+      (update(categories)
+            ..where((c) =>
+                c.userId.equals(userId) &
+                c.icon.equals(iconKey) &
+                c.isDefault.equals(true) &
+                c.colorHex.equals(colorHex).not()))
+          .write(
+        CategoriesCompanion(
+          colorHex: Value(colorHex),
+          updatedAt: Value(DateTime.now().toUtc()),
+          syncStatus: const Value(SyncStatus.pending),
+        ),
+      );
 }

@@ -7,13 +7,13 @@ class DefaultCategory {
   final String colorHex; // RRGGBB
 }
 
-/// The seven default categories from the design spec.
+/// The seven default categories from the Flo design tokens.
 const List<DefaultCategory> kDefaultCategories = [
   DefaultCategory('Food', 'food', 'F59E0B'),
   DefaultCategory('Transport', 'transport', '3B82F6'),
   DefaultCategory('Shopping', 'shopping', 'EC4899'),
-  DefaultCategory('Health', 'health', 'EF4444'),
+  DefaultCategory('Health', 'health', '10B981'),
   DefaultCategory('Entertainment', 'entertainment', '8B5CF6'),
-  DefaultCategory('Bills', 'bills', '10B981'),
-  DefaultCategory('Other', 'other', '6B7280'),
+  DefaultCategory('Bills', 'bills', 'EF4444'),
+  DefaultCategory('Other', 'other', '64748B'),
 ];

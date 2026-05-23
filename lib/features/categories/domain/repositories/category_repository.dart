@@ -5,6 +5,9 @@ abstract interface class CategoryRepository {
   /// Creates the default category set for [userId] if none exist yet.
   Future<void> seedDefaultsIfEmpty(String userId);
 
+  /// Aligns existing default categories with the canonical color palette.
+  Future<void> refreshDefaultStyles(String userId);
+
   Stream<List<Category>> watchCategories(String userId);
   Future<List<Category>> getCategories(String userId);
   Future<void> addCategory(Category category);

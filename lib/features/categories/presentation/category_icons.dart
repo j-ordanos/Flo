@@ -8,7 +8,7 @@ const Map<String, IconData> kCategoryIcons = {
   'health': Icons.favorite_outline,
   'entertainment': Icons.movie_outlined,
   'bills': Icons.receipt_long_outlined,
-  'other': Icons.category_outlined,
+  'other': Icons.circle_outlined,
 };
 
 IconData iconForCategoryKey(String key) =>

@@ -64,7 +64,9 @@ class AuthController {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
     await _ref.read(databaseProvider).reassignLocalUserData(userId);
-    await _ref.read(categoryRepositoryProvider).seedDefaultsIfEmpty(userId);
+    final categories = _ref.read(categoryRepositoryProvider);
+    await categories.seedDefaultsIfEmpty(userId);
+    await categories.refreshDefaultStyles(userId);
   }
 }
 
