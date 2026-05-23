@@ -44,6 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Local tooling
+/.claude/
+
 # Private planning docs (kept local, never pushed)
 /PLAN.md
 /design.txt
