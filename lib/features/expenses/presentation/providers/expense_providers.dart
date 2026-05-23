@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/database_provider.dart';
 import '../../../../core/providers/session_provider.dart';
+import '../../data/csv_export_service.dart';
 import '../../data/repositories/expense_repository_impl.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
@@ -10,6 +11,9 @@ final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return ExpenseRepositoryImpl(db.expenseDao);
 });
+
+final csvExportServiceProvider =
+    Provider<CsvExportService>((ref) => const CsvExportService());
 
 /// First day of the current month — the dashboard's reporting window.
 final currentMonthProvider = Provider<DateTime>((ref) {
