@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/enums/sync_status.dart';
 import '../../../../core/utils/money_formatter.dart';
+import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/state_views.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
 import '../../../categories/presentation/widgets/category_avatar.dart';
@@ -117,7 +118,8 @@ class _Details extends ConsumerWidget {
           style: theme.textTheme.titleMedium?.copyWith(color: theme.hintColor),
         ),
         const SizedBox(height: AppSpacing.lg),
-        Card(
+        AppCard(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
           child: Column(
             children: [
               _DetailRow(
