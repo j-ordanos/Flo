@@ -11,6 +11,7 @@ import '../../../../core/providers/session_provider.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../categories/domain/entities/category.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
+import '../../../categories/presentation/widgets/add_category_sheet.dart';
 import '../../../categories/presentation/widgets/category_avatar.dart';
 import '../../../sync/presentation/providers/sync_providers.dart';
 import '../../domain/entities/expense.dart';
@@ -290,7 +291,53 @@ class _CategoryGrid extends StatelessWidget {
             selected: c.id == selectedId,
             onTap: () => onSelect(c.id),
           ),
+        _AddCategoryTile(onCreated: onSelect),
       ],
+    );
+  }
+}
+
+class _AddCategoryTile extends StatelessWidget {
+  const _AddCategoryTile({required this.onCreated});
+
+  final ValueChanged<String> onCreated;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    return Material(
+      color: dark ? AppColors.darkSurfaceAlt : AppColors.lightSurfaceAlt,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: InkWell(
+        onTap: () async {
+          final id = await showAddCategorySheet(context);
+          if (id != null) onCreated(id);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: theme.dividerColor),
+                ),
+                child: Icon(Icons.add, color: theme.hintColor, size: 20),
+              ),
+              const SizedBox(height: 6),
+              Text('New',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600, color: theme.hintColor)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

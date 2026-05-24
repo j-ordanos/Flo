@@ -12,6 +12,7 @@ import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
+import '../../../categories/presentation/screens/manage_categories_screen.dart';
 import '../../../expenses/presentation/providers/expense_providers.dart';
 import '../providers/settings_providers.dart';
 
@@ -111,6 +112,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 label: 'Currency',
                 detail: '${currency.code} · ${currency.symbol}',
                 onTap: _pickCurrency,
+              ),
+              _SettingsRow(
+                icon: Icons.category_outlined,
+                tint: AppColors.primary,
+                label: 'Categories',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ManageCategoriesScreen(),
+                  ),
+                ),
               ),
               _SettingsRow(
                 icon: Icons.dark_mode_outlined,
