@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/enums/budget_period.dart';
 import '../../../../core/enums/sync_status.dart';
@@ -30,7 +31,7 @@ Future<void> showAddBudgetSheet(
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.sheet)),
     ),
     builder: (_) =>
         AddBudgetSheet(initial: initial, presetCategoryId: presetCategoryId),
@@ -50,19 +51,22 @@ class AddBudgetSheet extends ConsumerStatefulWidget {
 class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
   late String? _categoryId =
       widget.initial?.categoryId ?? widget.presetCategoryId;
-  late int _limitCents = widget.initial?.limitCents ?? 0;
+  // Budgets are entered in whole units (no cents).
+  late int _dollars =
+      widget.initial == null ? 0 : (widget.initial!.limitCents / 100).round();
   late BudgetPeriod _period = widget.initial?.period ?? BudgetPeriod.monthly;
   bool _saving = false;
 
   bool get _isEdit => widget.initial != null;
-  bool get _canSave => _categoryId != null && _limitCents > 0 && !_saving;
+  int get _limitCents => _dollars * 100;
+  bool get _canSave => _categoryId != null && _dollars > 0 && !_saving;
 
   void _onKey(String key) {
     setState(() {
       if (key == 'back') {
-        _limitCents = _limitCents ~/ 10;
+        _dollars = _dollars ~/ 10;
       } else if (key != '.') {
-        _limitCents = (_limitCents * 10 + int.parse(key)).clamp(0, 99999999);
+        _dollars = (_dollars * 10 + int.parse(key)).clamp(0, 99999999);
       }
     });
   }
@@ -73,7 +77,6 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
     final repo = ref.read(budgetRepositoryProvider);
     final userId = ref.read(currentUserIdProvider);
     final now = DateTime.now().toUtc();
-    // Reuse the category's existing budget if there is one.
     final existing =
         widget.initial ?? await repo.findByCategory(userId, _categoryId!);
     final budget = existing != null
@@ -98,6 +101,31 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete budget?'),
+        content: const Text('This budget limit will be removed.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if ((confirmed ?? false) && mounted) {
+      await ref.read(budgetRepositoryProvider).deleteBudget(widget.initial!.id);
+      ref.read(syncControllerProvider.notifier).requestSync();
+      if (mounted) Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -118,11 +146,12 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
             Text(
               _isEdit ? 'Edit budget' : 'New budget',
               textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium,
+              style:
+                  theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
-              formatCents(_limitCents),
+              formatCents0(_limitCents),
               textAlign: TextAlign.center,
               style: theme.textTheme.displaySmall
                   ?.copyWith(fontWeight: FontWeight.w800),
@@ -150,6 +179,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
               ],
               selected: {_period},
               onSelectionChanged: (s) => setState(() => _period = s.first),
+              showSelectedIcon: false,
             ),
             const SizedBox(height: AppSpacing.md),
             NumPad(onKey: _onKey, showDecimal: false),
@@ -164,6 +194,13 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                     )
                   : Text(_isEdit ? 'Save changes' : 'Create budget'),
             ),
+            if (_isEdit)
+              TextButton.icon(
+                onPressed: _delete,
+                style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('Delete budget'),
+              ),
           ],
         ),
       ),
