@@ -17,6 +17,7 @@ abstract class Expense with _$Expense {
     required DateTime updatedAt,
     String? merchant,
     String? note,
+    String? receiptPath,
     DateTime? deletedAt,
     @Default(SyncStatus.pending) SyncStatus syncStatus,
   }) = _Expense;

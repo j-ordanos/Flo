@@ -25,7 +25,16 @@ class AppDatabase extends _$AppDatabase {
       : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.addColumn(expenses, expenses.receiptPath);
+          }
+        },
+      );
 
   /// Re-assigns all locally-created (`kLocalUserId`) rows to [newUserId] on first
   /// sign-in, marking them pending so they upload during sync (P6).

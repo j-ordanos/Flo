@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/config/app_env.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/enums/sync_status.dart';
+import '../../../../core/providers/session_provider.dart';
 import '../../../../core/utils/hex_color.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/widgets/app_card.dart';
@@ -158,7 +161,7 @@ class _Details extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: AppSpacing.md),
-        _ReceiptPlaceholder(),
+        _ReceiptSection(expense: expense),
         const SizedBox(height: AppSpacing.lg),
         Row(
           children: [
@@ -249,10 +252,99 @@ class _Row extends StatelessWidget {
   }
 }
 
-class _ReceiptPlaceholder extends StatelessWidget {
+class _ReceiptSection extends ConsumerStatefulWidget {
+  const _ReceiptSection({required this.expense});
+
+  final Expense expense;
+
+  @override
+  ConsumerState<_ReceiptSection> createState() => _ReceiptSectionState();
+}
+
+class _ReceiptSectionState extends ConsumerState<_ReceiptSection> {
+  bool _busy = false;
+
+  void _snack(String message) => ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(message)));
+
+  Future<void> _attach() async {
+    if (!AppEnv.hasSupabase || ref.read(currentUserProvider) == null) {
+      _snack('Sign in to attach receipts.');
+      return;
+    }
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+    setState(() => _busy = true);
+    try {
+      final path = await ref.read(receiptServiceProvider).pickAndUpload(
+            userId: ref.read(currentUserIdProvider),
+            expenseId: widget.expense.id,
+            source: source,
+          );
+      if (path != null) {
+        await ref.read(expenseRepositoryProvider).updateExpense(
+              widget.expense.copyWith(
+                receiptPath: path,
+                updatedAt: DateTime.now().toUtc(),
+                syncStatus: SyncStatus.pending,
+              ),
+            );
+        ref.read(syncControllerProvider.notifier).requestSync();
+      }
+    } catch (_) {
+      _snack('Could not attach the receipt.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _remove() async {
+    setState(() => _busy = true);
+    try {
+      final path = widget.expense.receiptPath;
+      if (path != null) {
+        try {
+          await ref.read(receiptServiceProvider).remove(path);
+        } catch (_) {/* ignore storage errors */}
+      }
+      await ref.read(expenseRepositoryProvider).updateExpense(
+            widget.expense.copyWith(
+              receiptPath: null,
+              updatedAt: DateTime.now().toUtc(),
+              syncStatus: SyncStatus.pending,
+            ),
+          );
+      ref.read(syncControllerProvider.notifier).requestSync();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final path = widget.expense.receiptPath;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -260,9 +352,59 @@ class _ReceiptPlaceholder extends StatelessWidget {
             style: theme.textTheme.labelSmall
                 ?.copyWith(color: theme.hintColor, letterSpacing: 0.4)),
         const SizedBox(height: AppSpacing.sm),
-        DottedPlaceholder(
-          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Receipts are coming soon.')),
+        if (_busy)
+          const SizedBox(
+              height: 120, child: Center(child: CircularProgressIndicator()))
+        else if (path != null)
+          _ReceiptImage(path: path, onRemove: _remove)
+        else
+          DottedPlaceholder(onTap: _attach),
+      ],
+    );
+  }
+}
+
+class _ReceiptImage extends ConsumerWidget {
+  const _ReceiptImage({required this.path, required this.onRemove});
+
+  final String path;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          child: FutureBuilder<String>(
+            future: ref.read(receiptServiceProvider).signedUrl(path),
+            builder: (context, snap) {
+              if (!snap.hasData) {
+                return const SizedBox(
+                    height: 180,
+                    child: Center(child: CircularProgressIndicator()));
+              }
+              return Image.network(
+                snap.data!,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const SizedBox(
+                  height: 180,
+                  child: Center(child: Icon(Icons.broken_image_outlined)),
+                ),
+              );
+            },
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: onRemove,
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            icon: const Icon(Icons.delete_outline, size: 18),
+            label: const Text('Remove'),
           ),
         ),
       ],

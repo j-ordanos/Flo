@@ -12,6 +12,7 @@ class Expenses extends Table {
   TextColumn get categoryId => text().named('category_id')();
   TextColumn get merchant => text().nullable()();
   TextColumn get note => text().nullable()();
+  TextColumn get receiptPath => text().named('receipt_path').nullable()();
   DateTimeColumn get date => dateTime()();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get updatedAt => dateTime().named('updated_at')();
