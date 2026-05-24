@@ -35,12 +35,9 @@ class AuthController {
 
   final Ref _ref;
 
-  Future<void> signIn(String email, String password) async {
-    await _ref
-        .read(authRepositoryProvider)
-        .signInWithEmail(email: email, password: password);
-    await _onAuthenticated();
-  }
+  Future<void> signIn(String email, String password) => _ref
+      .read(authRepositoryProvider)
+      .signInWithEmail(email: email, password: password);
 
   /// Returns true when a session started immediately (email confirmation off),
   /// false when the user must confirm their email before signing in.
@@ -50,9 +47,7 @@ class AuthController {
           password: password,
           name: name,
         );
-    if (Supabase.instance.client.auth.currentUser == null) return false;
-    await _onAuthenticated();
-    return true;
+    return Supabase.instance.client.auth.currentUser != null;
   }
 
   Future<void> signInWithGoogle() =>
@@ -60,7 +55,9 @@ class AuthController {
 
   Future<void> signOut() => _ref.read(authRepositoryProvider).signOut();
 
-  Future<void> _onAuthenticated() async {
+  /// Local side effects to run whenever a user signs in (any method). Idempotent
+  /// — migrates offline data to the user and ensures default categories exist.
+  Future<void> onAuthenticated() async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
     await _ref.read(databaseProvider).reassignLocalUserData(userId);

@@ -8,6 +8,7 @@ import 'core/providers/preferences_provider.dart';
 import 'core/providers/session_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/presentation/providers/auth_providers.dart';
 import 'features/categories/presentation/providers/category_providers.dart';
 import 'features/profile/presentation/providers/settings_providers.dart';
 import 'features/sync/presentation/providers/sync_providers.dart';
@@ -57,6 +58,14 @@ class _FloAppState extends ConsumerState<FloApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Run post-sign-in side effects for any auth method (email or Google).
+    if (AppEnv.hasSupabase) {
+      ref.listenManual(authStateProvider, (_, next) {
+        if (next.value?.event == AuthChangeEvent.signedIn) {
+          ref.read(authControllerProvider).onAuthenticated();
+        }
+      });
+    }
   }
 
   @override
