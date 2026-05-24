@@ -12,6 +12,7 @@ import '../../../../core/utils/money_formatter.dart';
 import '../../../categories/domain/entities/category.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
 import '../../../categories/presentation/widgets/category_avatar.dart';
+import '../../../sync/presentation/providers/sync_providers.dart';
 import '../../domain/entities/expense.dart';
 import '../providers/expense_providers.dart';
 import 'num_pad.dart';
@@ -108,6 +109,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
         updatedAt: now,
       ));
     }
+    ref.read(syncControllerProvider.notifier).requestSync();
     await HapticFeedback.mediumImpact();
     if (mounted) Navigator.of(context).pop();
   }

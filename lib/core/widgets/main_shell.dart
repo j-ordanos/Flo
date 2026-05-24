@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/sync/presentation/providers/sync_providers.dart';
+import '../providers/connectivity_provider.dart';
+import 'offline_banner.dart';
+
 /// Bottom-navigation shell hosting the four primary branches:
-/// Home / Analytics / Budgets / Profile. The quick-add FAB lives on the
-/// dashboard branch itself.
-class MainShell extends StatelessWidget {
+/// Home / Analytics / Budgets / Profile. Also keeps the sync engine alive and
+/// shows the offline banner. The quick-add FAB lives on the dashboard branch.
+class MainShell extends ConsumerWidget {
   const MainShell({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
@@ -18,9 +23,17 @@ class MainShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(syncControllerProvider); // keep the sync engine running
+    final online = ref.watch(connectivityProvider).value ?? true;
+
     return Scaffold(
-      body: navigationShell,
+      body: Column(
+        children: [
+          if (!online) const OfflineBanner(),
+          Expanded(child: navigationShell),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: _onDestinationSelected,

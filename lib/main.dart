@@ -10,6 +10,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/categories/presentation/providers/category_providers.dart';
 import 'features/profile/presentation/providers/settings_providers.dart';
+import 'features/sync/presentation/providers/sync_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,11 +45,35 @@ Future<void> main() async {
   );
 }
 
-class FloApp extends ConsumerWidget {
+class FloApp extends ConsumerStatefulWidget {
   const FloApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FloApp> createState() => _FloAppState();
+}
+
+class _FloAppState extends ConsumerState<FloApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(syncControllerProvider.notifier).requestSync();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(goRouterProvider);
     final themeMode = ref.watch(themeModeProvider);
     // Rebuild the tree when the currency changes so formatted amounts refresh.

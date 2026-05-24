@@ -13,6 +13,7 @@ import '../../../../core/widgets/state_views.dart';
 import '../../../categories/domain/entities/category.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
 import '../../../categories/presentation/widgets/category_avatar.dart';
+import '../../../sync/presentation/providers/sync_providers.dart';
 import '../../domain/entities/expense.dart';
 import '../providers/expense_providers.dart';
 import '../widgets/add_expense_sheet.dart';
@@ -87,6 +88,7 @@ Future<void> _confirmDelete(
   );
   if ((confirmed ?? false) && context.mounted) {
     await ref.read(expenseRepositoryProvider).deleteExpense(id);
+    ref.read(syncControllerProvider.notifier).requestSync();
     if (context.mounted) context.pop();
   }
 }

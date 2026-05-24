@@ -12,6 +12,7 @@ import '../../../categories/domain/entities/category.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
 import '../../../categories/presentation/widgets/category_picker.dart';
 import '../../../expenses/presentation/widgets/num_pad.dart';
+import '../../../sync/presentation/providers/sync_providers.dart';
 import '../../domain/entities/budget.dart';
 import '../providers/budget_providers.dart';
 
@@ -92,6 +93,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
             updatedAt: now,
           );
     await repo.upsertBudget(budget);
+    ref.read(syncControllerProvider.notifier).requestSync();
     await HapticFeedback.mediumImpact();
     if (mounted) Navigator.of(context).pop();
   }
