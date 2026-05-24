@@ -23,8 +23,24 @@ class BudgetDao extends DatabaseAccessor<AppDatabase> with _$BudgetDaoMixin {
                 b.deletedAt.isNull()))
           .getSingleOrNull();
 
+  Future<BudgetRow?> findById(String id) =>
+      (select(budgets)..where((b) => b.id.equals(id))).getSingleOrNull();
+
   Future<void> upsert(BudgetRow row) =>
       into(budgets).insertOnConflictUpdate(row);
+
+  /// Rows awaiting upload.
+  Future<List<BudgetRow>> getPending(String userId) => (select(budgets)
+        ..where((b) =>
+            b.userId.equals(userId) &
+            b.syncStatus.equalsValue(SyncStatus.pending)))
+      .get();
+
+  Future<void> markSynced(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await (update(budgets)..where((b) => b.id.isIn(ids)))
+        .write(const BudgetsCompanion(syncStatus: Value(SyncStatus.synced)));
+  }
 
   Future<void> softDelete(String id, DateTime when) =>
       (update(budgets)..where((b) => b.id.equals(id))).write(

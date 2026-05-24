@@ -38,6 +38,19 @@ class CategoryDao extends DatabaseAccessor<AppDatabase> with _$CategoryDaoMixin 
   Future<void> upsert(CategoryRow row) =>
       into(categories).insertOnConflictUpdate(row);
 
+  /// Rows awaiting upload.
+  Future<List<CategoryRow>> getPending(String userId) => (select(categories)
+        ..where((c) =>
+            c.userId.equals(userId) &
+            c.syncStatus.equalsValue(SyncStatus.pending)))
+      .get();
+
+  Future<void> markSynced(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await (update(categories)..where((c) => c.id.isIn(ids)))
+        .write(const CategoriesCompanion(syncStatus: Value(SyncStatus.synced)));
+  }
+
   Future<void> insertAll(List<CategoryRow> rows) =>
       batch((b) => b.insertAll(categories, rows, mode: InsertMode.insertOrIgnore));
 

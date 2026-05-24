@@ -40,6 +40,19 @@ class ExpenseDao extends DatabaseAccessor<AppDatabase> with _$ExpenseDaoMixin {
   Future<void> upsert(ExpenseRow row) =>
       into(expenses).insertOnConflictUpdate(row);
 
+  /// Rows awaiting upload.
+  Future<List<ExpenseRow>> getPending(String userId) => (select(expenses)
+        ..where((e) =>
+            e.userId.equals(userId) &
+            e.syncStatus.equalsValue(SyncStatus.pending)))
+      .get();
+
+  Future<void> markSynced(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await (update(expenses)..where((e) => e.id.isIn(ids)))
+        .write(const ExpensesCompanion(syncStatus: Value(SyncStatus.synced)));
+  }
+
   Future<void> softDelete(String id, DateTime when) =>
       (update(expenses)..where((e) => e.id.equals(id))).write(
         ExpensesCompanion(
