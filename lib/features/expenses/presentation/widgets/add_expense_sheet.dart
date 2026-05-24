@@ -9,10 +9,12 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/enums/sync_status.dart';
 import '../../../../core/providers/session_provider.dart';
 import '../../../../core/utils/money_formatter.dart';
+import '../../../budgets/presentation/providers/budget_providers.dart';
 import '../../../categories/domain/entities/category.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
 import '../../../categories/presentation/widgets/add_category_sheet.dart';
 import '../../../categories/presentation/widgets/category_avatar.dart';
+import '../../../notifications/presentation/providers/notification_providers.dart';
 import '../../../sync/presentation/providers/sync_providers.dart';
 import '../../domain/entities/expense.dart';
 import '../providers/expense_providers.dart';
@@ -111,8 +113,31 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
       ));
     }
     ref.read(syncControllerProvider.notifier).requestSync();
+    if (!_isEdit) await _maybeBudgetAlert();
     await HapticFeedback.mediumImpact();
     if (mounted) Navigator.of(context).pop();
+  }
+
+  /// Fires a budget-overage notification if this expense pushes the category
+  /// past its limit (and alerts are enabled).
+  Future<void> _maybeBudgetAlert() async {
+    if (!(ref.read(pushEnabledProvider) && ref.read(budgetAlertsProvider))) {
+      return;
+    }
+    final categoryId = _categoryId;
+    if (categoryId == null) return;
+    final budget = ref.read(budgetsByCategoryProvider)[categoryId];
+    if (budget == null) return;
+    final before = ref.read(categoryTotalsProvider).value?[categoryId] ?? 0;
+    final after = before + _amountCents;
+    if (before <= budget.limitCents && after > budget.limitCents) {
+      final category = ref.read(categoriesByIdProvider)[categoryId];
+      await ref.read(notificationServiceProvider).showBudgetExceeded(
+            category: category?.name ?? 'budget',
+            spent: formatCents(after),
+            limit: formatCents(budget.limitCents),
+          );
+    }
   }
 
   @override

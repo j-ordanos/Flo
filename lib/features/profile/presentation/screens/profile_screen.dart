@@ -14,6 +14,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
 import '../../../categories/presentation/screens/manage_categories_screen.dart';
 import '../../../expenses/presentation/providers/expense_providers.dart';
+import '../../../notifications/presentation/providers/notification_providers.dart';
 import '../providers/settings_providers.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -25,8 +26,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _faceId = false;
-  bool _push = true;
-  bool _budgetAlerts = true;
 
   @override
   Widget build(BuildContext context) {
@@ -152,15 +151,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 tint: AppColors.warning,
                 label: 'Push notifications',
                 trailing: Switch(
-                    value: _push, onChanged: (v) => setState(() => _push = v)),
+                  value: ref.watch(pushEnabledProvider),
+                  onChanged: (v) {
+                    ref.read(pushEnabledProvider.notifier).set(v);
+                    if (v) ref.read(notificationServiceProvider).init();
+                  },
+                ),
               ),
               _SettingsRow(
                 icon: Icons.warning_amber_rounded,
                 tint: AppColors.danger,
                 label: 'Budget alerts',
                 trailing: Switch(
-                    value: _budgetAlerts,
-                    onChanged: (v) => setState(() => _budgetAlerts = v)),
+                  value: ref.watch(budgetAlertsProvider),
+                  onChanged: (v) {
+                    ref.read(budgetAlertsProvider.notifier).set(v);
+                    if (v) ref.read(notificationServiceProvider).init();
+                  },
+                ),
               ),
             ]),
             const SizedBox(height: AppSpacing.lg),
