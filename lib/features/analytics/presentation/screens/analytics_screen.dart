@@ -84,15 +84,23 @@ class _Body extends ConsumerWidget {
     final period = ref.watch(analyticsPeriodProvider);
     final categoriesById = ref.watch(categoriesByIdProvider);
 
-    // Analytics is about spending — exclude income.
+    // Spending drives the bar chart and category breakdown.
     final spends =
         expenses.where((e) => e.type == TransactionType.expense).toList();
     final series = _series(period, spends);
     final periodTotal = series.fold<int>(0, (s, b) => s + b.cents);
     final trend = _trend(series);
 
-    // Category slices for the current period window.
+    // Income within the same window (for the income-vs-spending summary).
     final range = _rangeFor(period);
+    final periodIncome = expenses
+        .where((e) =>
+            e.type == TransactionType.income &&
+            !e.date.isBefore(range.start) &&
+            e.date.isBefore(range.end))
+        .fold<int>(0, (s, e) => s + e.amountCents);
+
+    // Category slices for the current period window.
     final inPeriod = spends.where(
         (e) => !e.date.isBefore(range.start) && e.date.isBefore(range.end));
     final byCategory = <String, int>{};
@@ -144,6 +152,12 @@ class _Body extends ConsumerWidget {
                 MonthlyBarChart(bars: series),
               ],
             ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _IncomeVsSpending(
+            incomeCents: periodIncome,
+            spendingCents: periodTotal,
+            periodWord: _periodWord(period),
           ),
           const SizedBox(height: AppSpacing.lg),
           AppCard(
@@ -327,6 +341,127 @@ class _PeriodPill extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Income vs spending for the selected period, with the net difference.
+class _IncomeVsSpending extends StatelessWidget {
+  const _IncomeVsSpending({
+    required this.incomeCents,
+    required this.spendingCents,
+    required this.periodWord,
+  });
+
+  final int incomeCents;
+  final int spendingCents;
+  final String periodWord;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final net = incomeCents - spendingCents;
+    final positive = net >= 0;
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Income vs spending', style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: _Metric(
+                  label: 'Income',
+                  value: formatCents(incomeCents),
+                  color: AppColors.success,
+                  icon: Icons.arrow_downward,
+                ),
+              ),
+              Expanded(
+                child: _Metric(
+                  label: 'Spending',
+                  value: formatCents(spendingCents),
+                  color: AppColors.danger,
+                  icon: Icons.arrow_upward,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: 12),
+            decoration: BoxDecoration(
+              color: (positive ? AppColors.success : AppColors.danger)
+                  .withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(AppRadii.button),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Net this $periodWord',
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: theme.hintColor)),
+                Text('${positive ? '+' : '-'}${formatCents(net.abs())}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: positive ? AppColors.success : AppColors.danger,
+                    )),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Metric extends StatelessWidget {
+  const _Metric({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.14),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 13, color: color),
+            ),
+            const SizedBox(width: 6),
+            Text(label,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.hintColor)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700)),
+      ],
     );
   }
 }

@@ -237,6 +237,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
             _CategoryGrid(
               categories: categories,
               selectedId: _categoryId,
+              income: _isIncome,
               onSelect: (id) => setState(() => _categoryId = id),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -388,11 +389,13 @@ class _CategoryGrid extends StatelessWidget {
   const _CategoryGrid({
     required this.categories,
     required this.selectedId,
+    required this.income,
     required this.onSelect,
   });
 
   final List<Category> categories;
   final String? selectedId;
+  final bool income;
   final ValueChanged<String> onSelect;
 
   @override
@@ -417,15 +420,16 @@ class _CategoryGrid extends StatelessWidget {
             selected: c.id == selectedId,
             onTap: () => onSelect(c.id),
           ),
-        _AddCategoryTile(onCreated: onSelect),
+        _AddCategoryTile(income: income, onCreated: onSelect),
       ],
     );
   }
 }
 
 class _AddCategoryTile extends StatelessWidget {
-  const _AddCategoryTile({required this.onCreated});
+  const _AddCategoryTile({required this.income, required this.onCreated});
 
+  final bool income;
   final ValueChanged<String> onCreated;
 
   @override
@@ -438,7 +442,7 @@ class _AddCategoryTile extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: InkWell(
         onTap: () async {
-          final id = await showAddCategorySheet(context);
+          final id = await showAddCategorySheet(context, income: income);
           if (id != null) onCreated(id);
         },
         child: Padding(

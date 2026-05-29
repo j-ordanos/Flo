@@ -15,8 +15,12 @@ import '../providers/category_providers.dart';
 import 'category_avatar.dart';
 
 /// Opens the add/edit category sheet. Resolves to the new/edited category id,
-/// or null if dismissed.
-Future<String?> showAddCategorySheet(BuildContext context, {Category? initial}) {
+/// or null if dismissed. Set [income] to offer income-related icons first.
+Future<String?> showAddCategorySheet(
+  BuildContext context, {
+  Category? initial,
+  bool income = false,
+}) {
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
@@ -26,14 +30,15 @@ Future<String?> showAddCategorySheet(BuildContext context, {Category? initial}) 
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.sheet)),
     ),
-    builder: (_) => AddCategorySheet(initial: initial),
+    builder: (_) => AddCategorySheet(initial: initial, income: income),
   );
 }
 
 class AddCategorySheet extends ConsumerStatefulWidget {
-  const AddCategorySheet({this.initial, super.key});
+  const AddCategorySheet({this.initial, this.income = false, super.key});
 
   final Category? initial;
+  final bool income;
 
   @override
   ConsumerState<AddCategorySheet> createState() => _AddCategorySheetState();
@@ -42,11 +47,14 @@ class AddCategorySheet extends ConsumerStatefulWidget {
 class _AddCategorySheetState extends ConsumerState<AddCategorySheet> {
   late final TextEditingController _name =
       TextEditingController(text: widget.initial?.name ?? '');
-  late String _iconKey = widget.initial?.icon ?? 'other';
+  late String _iconKey =
+      widget.initial?.icon ?? (widget.income ? 'paycheck' : 'other');
   late String _colorHex = widget.initial?.colorHex ?? kCategoryPalette.first;
   bool _saving = false;
 
   bool get _isEdit => widget.initial != null;
+  List<String> get _iconKeys =>
+      widget.income ? kIncomeIconKeys : kSelectableIconKeys;
 
   Future<void> _save() async {
     final name = _name.text.trim();
@@ -163,7 +171,7 @@ class _AddCategorySheetState extends ConsumerState<AddCategorySheet> {
               mainAxisSpacing: AppSpacing.sm,
               crossAxisSpacing: AppSpacing.sm,
               children: [
-                for (final key in kSelectableIconKeys)
+                for (final key in _iconKeys)
                   _IconTile(
                     iconKey: key,
                     color: color,

@@ -44,6 +44,19 @@ const Map<String, IconData> kCategoryIcons = {
   'savings': Icons.savings_outlined,
   'salary': Icons.payments_outlined,
   'charity': Icons.volunteer_activism_outlined,
+  // Income
+  'paycheck': Icons.account_balance_wallet_outlined,
+  'freelance': Icons.work_outline,
+  'business': Icons.storefront_outlined,
+  'investment': Icons.trending_up_outlined,
+  'dividends': Icons.pie_chart_outline,
+  'interest': Icons.account_balance_outlined,
+  'refund': Icons.replay_outlined,
+  'bonus': Icons.emoji_events_outlined,
+  'rental': Icons.apartment_outlined,
+  'sales': Icons.sell_outlined,
+  'tips': Icons.attach_money_outlined,
+  'gift_income': Icons.redeem_outlined,
 };
 
 IconData iconForCategoryKey(String key) =>
@@ -59,6 +72,14 @@ const List<String> kSelectableIconKeys = [
   'bills', 'utilities', 'phone', 'internet', 'subscriptions',
   'home', 'rent', 'education', 'kids',
   'savings', 'salary', 'charity', 'other',
+];
+
+/// Income-related icon keys, surfaced first when creating an income category.
+const List<String> kIncomeIconKeys = [
+  'paycheck', 'salary', 'freelance', 'business',
+  'investment', 'dividends', 'interest', 'rental',
+  'sales', 'tips', 'bonus', 'refund',
+  'gift_income', 'savings', 'other',
 ];
 
 /// Color choices (RRGGBB) for custom categories.
