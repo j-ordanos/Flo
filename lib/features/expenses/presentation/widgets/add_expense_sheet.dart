@@ -119,13 +119,13 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
       ));
     }
     ref.read(syncControllerProvider.notifier).requestSync();
-    if (!_isEdit && !_isIncome) await _maybeBudgetAlert();
+    if (!_isIncome) await _maybeBudgetAlert();
     await HapticFeedback.mediumImpact();
     if (mounted) Navigator.of(context).pop();
   }
 
-  /// Fires a budget-overage notification if this expense pushes the category
-  /// past its limit (and alerts are enabled).
+  /// Fires a budget-overage notification if this save pushes the category past
+  /// its limit (and alerts are enabled). Works for both new and edited expenses.
   Future<void> _maybeBudgetAlert() async {
     if (!(ref.read(pushEnabledProvider) && ref.read(budgetAlertsProvider))) {
       return;
@@ -134,8 +134,22 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
     if (categoryId == null) return;
     final budget = ref.read(budgetsByCategoryProvider)[categoryId];
     if (budget == null) return;
-    final before = ref.read(categoryTotalsProvider).value?[categoryId] ?? 0;
-    final after = before + _amountCents;
+
+    // Fresh post-write total for this category this month.
+    final totals = await ref.read(expenseRepositoryProvider).watchTotalsByCategory(
+          ref.read(currentUserIdProvider),
+          ref.read(currentMonthProvider),
+        ).first;
+    final after = totals[categoryId] ?? 0;
+
+    // How much this save added to the category total.
+    final sameCategory = _isEdit &&
+        widget.initial!.categoryId == categoryId &&
+        widget.initial!.type == TransactionType.expense;
+    final delta =
+        sameCategory ? _amountCents - widget.initial!.amountCents : _amountCents;
+    final before = after - delta;
+
     if (before <= budget.limitCents && after > budget.limitCents) {
       final category = ref.read(categoriesByIdProvider)[categoryId];
       await ref.read(notificationServiceProvider).showBudgetExceeded(

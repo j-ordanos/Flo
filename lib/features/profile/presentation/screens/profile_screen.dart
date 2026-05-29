@@ -27,6 +27,41 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _faceId = false;
 
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _togglePush(bool value) async {
+    await ref.read(pushEnabledProvider.notifier).set(value);
+    final service = ref.read(notificationServiceProvider);
+    if (value) {
+      await service.init();
+      await service.showReminder(
+        id: 100,
+        title: 'Notifications on',
+        body: "We'll let you know when a category goes over budget.",
+      );
+      _snack('Notifications enabled');
+    } else {
+      await service.cancelAll();
+      _snack('Notifications turned off');
+    }
+  }
+
+  Future<void> _toggleBudgetAlerts(bool value) async {
+    await ref.read(budgetAlertsProvider.notifier).set(value);
+    if (!value) return;
+    if (ref.read(pushEnabledProvider)) {
+      await ref.read(notificationServiceProvider).init();
+      _snack('Budget alerts on');
+    } else {
+      _snack('Turn on Push notifications to receive alerts');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -152,10 +187,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 label: 'Push notifications',
                 trailing: Switch(
                   value: ref.watch(pushEnabledProvider),
-                  onChanged: (v) {
-                    ref.read(pushEnabledProvider.notifier).set(v);
-                    if (v) ref.read(notificationServiceProvider).init();
-                  },
+                  onChanged: _togglePush,
                 ),
               ),
               _SettingsRow(
@@ -164,10 +196,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 label: 'Budget alerts',
                 trailing: Switch(
                   value: ref.watch(budgetAlertsProvider),
-                  onChanged: (v) {
-                    ref.read(budgetAlertsProvider.notifier).set(v);
-                    if (v) ref.read(notificationServiceProvider).init();
-                  },
+                  onChanged: _toggleBudgetAlerts,
                 ),
               ),
             ]),

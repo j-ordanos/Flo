@@ -10,6 +10,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/providers/auth_providers.dart';
 import 'features/categories/presentation/providers/category_providers.dart';
+import 'features/notifications/presentation/providers/notification_providers.dart';
 import 'features/profile/presentation/providers/settings_providers.dart';
 import 'features/sync/presentation/providers/sync_providers.dart';
 
@@ -65,6 +66,10 @@ class _FloAppState extends ConsumerState<FloApp> with WidgetsBindingObserver {
           ref.read(authControllerProvider).onAuthenticated();
         }
       });
+    }
+    // Prepare notifications up front so budget alerts can fire later.
+    if (ref.read(pushEnabledProvider)) {
+      ref.read(notificationServiceProvider).init();
     }
   }
 
