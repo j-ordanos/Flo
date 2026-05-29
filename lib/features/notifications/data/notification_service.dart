@@ -33,15 +33,18 @@ class NotificationService {
       );
       await _plugin.initialize(settings);
 
-      final android = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       await android?.createNotificationChannel(_channel);
       await android?.createNotificationChannel(_generalChannel);
       await android?.requestNotificationsPermission();
 
       await _plugin
           .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>()
+            IOSFlutterLocalNotificationsPlugin
+          >()
           ?.requestPermissions(alert: true, badge: true, sound: true);
 
       _ready = true;
@@ -112,5 +115,48 @@ class NotificationService {
     } catch (_) {
       // Best-effort.
     }
+  }
+
+  /// Returns a list of pending/active notifications (best-effort).
+  /// Each entry contains keys: 'id', 'title', 'body', 'type' ('pending'|'active').
+  Future<List<Map<String, String>>> getNotifications() async {
+    await init();
+    final out = <Map<String, String>>[];
+    try {
+      final pending = await _plugin.pendingNotificationRequests();
+      for (final p in pending) {
+        out.add({
+          'id': p.id.toString(),
+          'title': p.title ?? '',
+          'body': p.body ?? '',
+          'type': 'pending',
+        });
+      }
+    } catch (_) {
+      // ignore
+    }
+
+    try {
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      final active = await android?.getActiveNotifications();
+      if (active != null) {
+        for (final a in active) {
+          // ActiveNotification has id, title, body on Android implementation.
+          out.add({
+            'id': (a.id ?? '').toString(),
+            'title': (a.title ?? '').toString(),
+            'body': (a.body ?? '').toString(),
+            'type': 'active',
+          });
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+
+    return out;
   }
 }
