@@ -30,6 +30,11 @@ class SyncService {
       try {
         await _push(userId);
         await _pull(userId);
+        // Collapse any duplicate default categories that the pull may have
+        // brought down from older installs, then push the resulting deletes.
+        if (await _db.dedupeDefaultCategories(userId)) {
+          await _push(userId);
+        }
         return;
       } catch (_) {
         if (attempt >= _maxAttempts - 1) rethrow;

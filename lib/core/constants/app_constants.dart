@@ -8,3 +8,8 @@ const String kOnboardingSeenKey = 'onboarding_seen';
 /// Deep-link the OAuth provider redirects back to (must match the Android
 /// intent-filter, iOS URL scheme, and Supabase allowed redirect URLs).
 const String kOAuthRedirect = 'com.jordanos.flo://login-callback';
+
+/// Deterministic id for a seeded default category. Stable per (user, icon) so
+/// re-seeding across installs/logins is idempotent — upsert/insert-or-ignore
+/// collapse onto the same row instead of creating duplicates.
+String defaultCategoryId(String userId, String icon) => 'cat_${userId}_$icon';

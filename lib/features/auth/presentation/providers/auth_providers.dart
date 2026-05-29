@@ -34,6 +34,7 @@ class AuthController {
   AuthController(this._ref);
 
   final Ref _ref;
+  bool _runningPostSignIn = false;
 
   Future<void> signIn(String email, String password) => _ref
       .read(authRepositoryProvider)
@@ -57,13 +58,24 @@ class AuthController {
 
   /// Local side effects to run whenever a user signs in (any method). Idempotent
   /// — migrates offline data to the user and ensures default categories exist.
+  /// Guarded against re-entry: the `signedIn` auth event can fire more than once
+  /// (sign-in, token refresh, session restore) and concurrent seeding caused
+  /// duplicate categories.
   Future<void> onAuthenticated() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) return;
-    await _ref.read(databaseProvider).reassignLocalUserData(userId);
-    final categories = _ref.read(categoryRepositoryProvider);
-    await categories.seedDefaultsIfEmpty(userId);
-    await categories.refreshDefaultStyles(userId);
+    if (_runningPostSignIn) return;
+    _runningPostSignIn = true;
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return;
+      final db = _ref.read(databaseProvider);
+      await db.reassignLocalUserData(userId);
+      final categories = _ref.read(categoryRepositoryProvider);
+      await categories.seedDefaultsIfEmpty(userId);
+      await categories.refreshDefaultStyles(userId);
+      await db.dedupeDefaultCategories(userId);
+    } finally {
+      _runningPostSignIn = false;
+    }
   }
 }
 

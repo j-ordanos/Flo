@@ -1,5 +1,4 @@
-import 'package:uuid/uuid.dart';
-
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/daos/category_dao.dart';
 import '../../../../core/enums/sync_status.dart';
@@ -10,10 +9,9 @@ import '../mappers/category_mapper.dart';
 
 /// Local-first [CategoryRepository].
 class CategoryRepositoryImpl implements CategoryRepository {
-  CategoryRepositoryImpl(this._dao, {Uuid uuid = const Uuid()}) : _uuid = uuid;
+  CategoryRepositoryImpl(this._dao);
 
   final CategoryDao _dao;
-  final Uuid _uuid;
 
   @override
   Future<void> seedDefaultsIfEmpty(String userId) async {
@@ -22,7 +20,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
     final rows = [
       for (final d in kDefaultCategories)
         CategoryRow(
-          id: _uuid.v4(),
+          id: defaultCategoryId(userId, d.icon),
           userId: userId,
           name: d.name,
           icon: d.icon,
