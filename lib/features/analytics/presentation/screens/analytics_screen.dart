@@ -7,7 +7,6 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/enums/transaction_type.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/widgets/app_card.dart';
-import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/shimmer_list.dart';
 import '../../../../core/widgets/state_views.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
@@ -97,15 +96,9 @@ class _Body extends ConsumerWidget {
     final inPeriod = spends.where(
         (e) => !e.date.isBefore(range.start) && e.date.isBefore(range.end));
     final byCategory = <String, int>{};
-    final byMerchant = <String, int>{};
     for (final e in inPeriod) {
       byCategory.update(e.categoryId, (v) => v + e.amountCents,
           ifAbsent: () => e.amountCents);
-      final m = e.merchant?.trim();
-      if (m != null && m.isNotEmpty) {
-        byMerchant.update(m, (v) => v + e.amountCents,
-            ifAbsent: () => e.amountCents);
-      }
     }
     final slices = [
       for (final entry in byCategory.entries)
@@ -113,8 +106,6 @@ class _Body extends ConsumerWidget {
           (category: c, cents: entry.value),
     ]..sort((a, b) => b.cents.compareTo(a.cents));
     final total = slices.fold<int>(0, (s, x) => s + x.cents);
-    final topMerchants = byMerchant.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 100),
@@ -185,10 +176,6 @@ class _Body extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          const SectionHeader(title: 'Top merchants'),
-          const SizedBox(height: AppSpacing.sm),
-          _TopMerchants(entries: topMerchants.take(5).toList()),
           const SizedBox(height: AppSpacing.lg),
           OutlinedButton.icon(
             onPressed: () {
@@ -409,55 +396,6 @@ class _LegendRow extends StatelessWidget {
             style: theme.textTheme.bodySmall
                 ?.copyWith(fontWeight: FontWeight.w700)),
       ],
-    );
-  }
-}
-
-class _TopMerchants extends StatelessWidget {
-  const _TopMerchants({required this.entries});
-
-  final List<MapEntry<String, int>> entries;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    if (entries.isEmpty) {
-      return AppCard(
-        child: Text(
-          'Add a merchant to your expenses to see your top spots here.',
-          style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
-        ),
-      );
-    }
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        children: [
-          for (var i = 0; i < entries.length; i++) ...[
-            if (i > 0) const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 24,
-                    child: Text('#${i + 1}',
-                        style: theme.textTheme.labelMedium
-                            ?.copyWith(color: theme.hintColor)),
-                  ),
-                  Expanded(
-                    child: Text(entries[i].key,
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
-                  ),
-                  Text(formatCents(entries[i].value),
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700)),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
     );
   }
 }

@@ -151,25 +151,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: AppSpacing.lg),
                 const OrDivider(label: 'OR CONTINUE WITH'),
                 const SizedBox(height: AppSpacing.lg),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _loading ? null : _google,
-                        icon: const Icon(Icons.g_mobiledata, size: 28),
-                        label: const Text('Google'),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () =>
-                            _snack('Apple sign-in is coming soon.'),
-                        icon: const Icon(Icons.apple, size: 22),
-                        label: const Text('Apple'),
-                      ),
-                    ),
-                  ],
+                OutlinedButton.icon(
+                  onPressed: _loading ? null : _google,
+                  icon: const Icon(Icons.g_mobiledata, size: 28),
+                  label: const Text('Continue with Google'),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Row(

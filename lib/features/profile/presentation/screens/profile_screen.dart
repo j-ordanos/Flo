@@ -25,8 +25,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  bool _faceId = false;
-
   void _snack(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -168,14 +166,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       .set(v ? ThemeMode.dark : ThemeMode.light),
                 ),
               ),
-              _SettingsRow(
-                icon: Icons.fingerprint,
-                tint: AppColors.success,
-                label: 'Face ID',
-                trailing: Switch(
-                    value: _faceId,
-                    onChanged: (v) => setState(() => _faceId = v)),
-              ),
             ]),
             const SizedBox(height: AppSpacing.lg),
             const _SectionLabel('Notifications'),
@@ -209,14 +199,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 tint: AppColors.primary,
                 label: 'Export as CSV',
                 onTap: _exportCsv,
-              ),
-              _SettingsRow(
-                icon: Icons.picture_as_pdf_outlined,
-                tint: AppColors.primary,
-                label: 'Export as PDF',
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('PDF export is coming soon.')),
-                ),
               ),
             ]),
             const SizedBox(height: AppSpacing.lg),
