@@ -29,6 +29,7 @@ void main() {
           expensesProvider
               .overrideWith((ref) => Stream.value(const <Expense>[])),
           monthlyTotalProvider.overrideWith((ref) => Stream.value(0)),
+          monthlyIncomeProvider.overrideWith((ref) => Stream.value(0)),
           lastMonthTotalProvider.overrideWith((ref) => Stream.value(0)),
           categoryTotalsProvider
               .overrideWith((ref) => Stream.value(const <String, int>{})),
@@ -60,6 +61,7 @@ void main() {
         overrides: [
           expensesProvider.overrideWith((ref) => Stream.value([expense])),
           monthlyTotalProvider.overrideWith((ref) => Stream.value(1234)),
+          monthlyIncomeProvider.overrideWith((ref) => Stream.value(0)),
           lastMonthTotalProvider.overrideWith((ref) => Stream.value(0)),
           categoryTotalsProvider
               .overrideWith((ref) => Stream.value(const {'c1': 1234})),

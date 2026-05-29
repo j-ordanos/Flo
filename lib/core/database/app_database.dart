@@ -5,6 +5,7 @@ import '../constants/app_constants.dart';
 import '../enums/budget_period.dart';
 import '../enums/sync_operation.dart';
 import '../enums/sync_status.dart';
+import '../enums/transaction_type.dart';
 import 'daos/budget_dao.dart';
 import 'daos/category_dao.dart';
 import 'daos/expense_dao.dart';

@@ -1,6 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flo/core/database/app_database.dart';
 import 'package:flo/core/enums/sync_status.dart';
+import 'package:flo/core/enums/transaction_type.dart';
 import 'package:flo/features/sync/data/sync_mappers.dart';
 import 'package:flo/features/sync/data/sync_service.dart';
 import 'package:flo/features/sync/domain/sync_remote.dart';
@@ -49,6 +50,7 @@ void main() {
       id: id,
       userId: 'u',
       amountCents: cents,
+      type: TransactionType.expense,
       categoryId: 'food',
       date: now,
       createdAt: now,

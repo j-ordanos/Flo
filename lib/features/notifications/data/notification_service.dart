@@ -14,6 +14,13 @@ class NotificationService {
     importance: Importance.high,
   );
 
+  static const _generalChannel = AndroidNotificationChannel(
+    'general',
+    'General',
+    description: 'General Flo notifications.',
+    importance: Importance.defaultImportance,
+  );
+
   /// Initializes the plugin and requests permission. Idempotent and best-effort
   /// (no-op on platforms without an implementation, e.g. desktop/tests).
   Future<void> init() async {
@@ -29,6 +36,7 @@ class NotificationService {
       final android = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       await android?.createNotificationChannel(_channel);
+      await android?.createNotificationChannel(_generalChannel);
       await android?.requestNotificationsPermission();
 
       await _plugin
@@ -65,6 +73,42 @@ class NotificationService {
           iOS: DarwinNotificationDetails(),
         ),
       );
+    } catch (_) {
+      // Best-effort.
+    }
+  }
+
+  /// A general one-off notification (e.g. confirming notifications are on).
+  Future<void> showReminder({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    await init();
+    try {
+      await _plugin.show(
+        id,
+        title,
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'general',
+            'General',
+            channelDescription: 'General Flo notifications.',
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+      );
+    } catch (_) {
+      // Best-effort.
+    }
+  }
+
+  /// Removes all delivered/pending notifications (e.g. when the user turns
+  /// notifications off).
+  Future<void> cancelAll() async {
+    try {
+      await _plugin.cancelAll();
     } catch (_) {
       // Best-effort.
     }

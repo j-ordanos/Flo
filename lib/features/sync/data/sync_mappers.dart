@@ -1,6 +1,7 @@
 import '../../../core/database/app_database.dart';
 import '../../../core/enums/budget_period.dart';
 import '../../../core/enums/sync_status.dart';
+import '../../../core/enums/transaction_type.dart';
 
 /// Drift row ⇄ Supabase JSON. `sync_status` is local-only and never sent.
 /// Pulled rows are marked [SyncStatus.synced].
@@ -17,6 +18,7 @@ Map<String, dynamic> expenseToJson(ExpenseRow r) => {
       'id': r.id,
       'user_id': r.userId,
       'amount_cents': r.amountCents,
+      'type': r.type.name,
       'category_id': r.categoryId,
       'merchant': r.merchant,
       'note': r.note,
@@ -31,6 +33,7 @@ ExpenseRow expenseFromJson(Map<String, dynamic> m) => ExpenseRow(
       id: m['id'] as String,
       userId: m['user_id'] as String,
       amountCents: (m['amount_cents'] as num).toInt(),
+      type: TransactionType.values.byName(m['type'] as String? ?? 'expense'),
       categoryId: m['category_id'] as String,
       merchant: m['merchant'] as String?,
       note: m['note'] as String?,

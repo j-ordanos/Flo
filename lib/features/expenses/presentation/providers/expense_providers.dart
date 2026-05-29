@@ -40,6 +40,15 @@ final monthlyTotalProvider = StreamProvider.autoDispose<int>((ref) {
   );
 });
 
+/// Total income recorded in the current month.
+final monthlyIncomeProvider = StreamProvider.autoDispose<int>((ref) {
+  final repo = ref.watch(expenseRepositoryProvider);
+  return repo.watchMonthlyIncome(
+    ref.watch(currentUserIdProvider),
+    ref.watch(currentMonthProvider),
+  );
+});
+
 final categoryTotalsProvider =
     StreamProvider.autoDispose<Map<String, int>>((ref) {
   final repo = ref.watch(expenseRepositoryProvider);
