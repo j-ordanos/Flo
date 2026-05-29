@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/enums/transaction_type.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/section_header.dart';
@@ -84,13 +85,16 @@ class _Body extends ConsumerWidget {
     final period = ref.watch(analyticsPeriodProvider);
     final categoriesById = ref.watch(categoriesByIdProvider);
 
-    final series = _series(period, expenses);
+    // Analytics is about spending — exclude income.
+    final spends =
+        expenses.where((e) => e.type == TransactionType.expense).toList();
+    final series = _series(period, spends);
     final periodTotal = series.fold<int>(0, (s, b) => s + b.cents);
     final trend = _trend(series);
 
     // Category slices for the current period window.
     final range = _rangeFor(period);
-    final inPeriod = expenses.where(
+    final inPeriod = spends.where(
         (e) => !e.date.isBefore(range.start) && e.date.isBefore(range.end));
     final byCategory = <String, int>{};
     final byMerchant = <String, int>{};

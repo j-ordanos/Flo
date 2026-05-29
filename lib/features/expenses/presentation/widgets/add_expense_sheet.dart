@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/enums/sync_status.dart';
+import '../../../../core/enums/transaction_type.dart';
 import '../../../../core/providers/session_provider.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../budgets/presentation/providers/budget_providers.dart';
@@ -48,6 +49,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
   late String _amount = widget.initial == null
       ? '0'
       : (widget.initial!.amountCents / 100).toStringAsFixed(2);
+  late TransactionType _type = widget.initial?.type ?? TransactionType.expense;
   late String? _categoryId = widget.initial?.categoryId;
   late DateTime _date = widget.initial?.date ?? DateTime.now();
   late final TextEditingController _note =
@@ -55,6 +57,8 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
   bool _saving = false;
 
   bool get _isEdit => widget.initial != null;
+  bool get _isIncome => _type == TransactionType.income;
+  String get _typeWord => _isIncome ? 'income' : 'expense';
   int get _amountCents => ((double.tryParse(_amount) ?? 0) * 100).round();
   bool get _canSave => _amountCents > 0 && _categoryId != null && !_saving;
 
@@ -94,6 +98,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
     if (_isEdit) {
       await repo.updateExpense(widget.initial!.copyWith(
         amountCents: _amountCents,
+        type: _type,
         categoryId: _categoryId!,
         note: noteOrNull,
         date: _date,
@@ -105,6 +110,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
         id: const Uuid().v4(),
         userId: ref.read(currentUserIdProvider),
         amountCents: _amountCents,
+        type: _type,
         categoryId: _categoryId!,
         note: noteOrNull,
         date: _date,
@@ -113,7 +119,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
       ));
     }
     ref.read(syncControllerProvider.notifier).requestSync();
-    if (!_isEdit) await _maybeBudgetAlert();
+    if (!_isEdit && !_isIncome) await _maybeBudgetAlert();
     await HapticFeedback.mediumImpact();
     if (mounted) Navigator.of(context).pop();
   }
@@ -165,9 +171,14 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Center(
-              child: Text(_isEdit ? 'Edit expense' : 'New expense',
+              child: Text(_isEdit ? 'Edit $_typeWord' : 'New $_typeWord',
                   style: theme.textTheme.titleMedium
                       ?.copyWith(fontWeight: FontWeight.w700)),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _TypeToggle(
+              value: _type,
+              onChanged: (t) => setState(() => _type = t),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text('AMOUNT',
@@ -181,11 +192,13 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: 8, right: 2),
-                  child: Text(Money.symbol,
+                  child: Text(_isIncome ? '+${Money.symbol}' : Money.symbol,
                       style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w600,
-                          color: theme.hintColor)),
+                          color: _isIncome && !isZero
+                              ? AppColors.success
+                              : theme.hintColor)),
                 ),
                 Text(
                   _amount,
@@ -193,7 +206,11 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
                     fontSize: 52,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -1.5,
-                    color: isZero ? theme.hintColor : theme.colorScheme.onSurface,
+                    color: isZero
+                        ? theme.hintColor
+                        : _isIncome
+                            ? AppColors.success
+                            : theme.colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -237,9 +254,79 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text(_isEdit ? 'Save changes' : 'Save expense'),
+                  : Text(_isEdit ? 'Save changes' : 'Save $_typeWord'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Segmented Expense / Income switch.
+class _TypeToggle extends StatelessWidget {
+  const _TypeToggle({required this.value, required this.onChanged});
+
+  final TransactionType value;
+  final ValueChanged<TransactionType> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: dark ? AppColors.darkSurfaceAlt : AppColors.lightSurfaceAlt,
+        borderRadius: BorderRadius.circular(AppRadii.button),
+      ),
+      child: Row(
+        children: [
+          _segment(context, TransactionType.expense, 'Expense',
+              Icons.remove_circle_outline, theme.colorScheme.primary),
+          _segment(context, TransactionType.income, 'Income',
+              Icons.add_circle_outline, AppColors.success),
+        ],
+      ),
+    );
+  }
+
+  Widget _segment(BuildContext context, TransactionType type, String label,
+      IconData icon, Color accent) {
+    final theme = Theme.of(context);
+    final selected = type == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onChanged(type),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? theme.colorScheme.surface : null,
+            borderRadius: BorderRadius.circular(9),
+            boxShadow: selected && theme.brightness == Brightness.light
+                ? const [
+                    BoxShadow(
+                        color: Color(0x14000000),
+                        blurRadius: 3,
+                        offset: Offset(0, 1))
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 17, color: selected ? accent : theme.hintColor),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: selected
+                        ? theme.colorScheme.onSurface
+                        : theme.hintColor,
+                  )),
+            ],
+          ),
         ),
       ),
     );

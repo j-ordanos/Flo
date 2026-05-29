@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/shimmer_list.dart';
@@ -59,6 +60,7 @@ class _Body extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final spent = ref.watch(monthlyTotalProvider).value ?? 0;
+    final income = ref.watch(monthlyIncomeProvider).value ?? 0;
     final budget = ref.watch(monthlyBudgetTotalProvider);
     final lastMonth = ref.watch(lastMonthTotalProvider).value ?? 0;
 
@@ -75,6 +77,13 @@ class _Body extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
+        if (income > 0) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: _IncomeBalanceRow(incomeCents: income, spentCents: spent),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         if (expenses.isEmpty)
           const _EmptyState()
         else ...[
@@ -108,6 +117,96 @@ class _Body extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Two compact cards: money in this month and the resulting balance.
+class _IncomeBalanceRow extends StatelessWidget {
+  const _IncomeBalanceRow({required this.incomeCents, required this.spentCents});
+
+  final int incomeCents;
+  final int spentCents;
+
+  @override
+  Widget build(BuildContext context) {
+    final balance = incomeCents - spentCents;
+    final positive = balance >= 0;
+    return Row(
+      children: [
+        Expanded(
+          child: _MiniStat(
+            label: 'Income',
+            value: '+${formatCents0(incomeCents)}',
+            icon: Icons.south_west_rounded,
+            color: AppColors.success,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: _MiniStat(
+            label: 'Balance',
+            value: formatCents0(balance),
+            icon: positive
+                ? Icons.account_balance_wallet_outlined
+                : Icons.trending_down_rounded,
+            color: positive ? AppColors.success : AppColors.danger,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  const _MiniStat({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 19, color: color),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: theme.hintColor)),
+                const SizedBox(height: 2),
+                Text(value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

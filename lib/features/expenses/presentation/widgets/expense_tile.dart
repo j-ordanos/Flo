@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/enums/transaction_type.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
 import '../../../categories/presentation/widgets/category_avatar.dart';
@@ -19,10 +21,11 @@ class ExpenseTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final category = ref.watch(categoriesByIdProvider)[expense.categoryId];
+    final isIncome = expense.type == TransactionType.income;
     final title = switch (expense) {
       Expense(:final merchant?) when merchant.isNotEmpty => merchant,
       Expense(:final note?) when note.isNotEmpty => note,
-      _ => category?.name ?? 'Expense',
+      _ => category?.name ?? (isIncome ? 'Income' : 'Expense'),
     };
     final subtitle = [
       if (category != null) category.name,
@@ -44,9 +47,12 @@ class ExpenseTile extends ConsumerWidget {
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
       trailing: Text(
-        '-${formatCents(expense.amountCents)}',
-        style: theme.textTheme.titleMedium
-            ?.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
+        '${isIncome ? '+' : '-'}${formatCents(expense.amountCents)}',
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: isIncome ? AppColors.success : null,
+        ),
       ),
     );
   }

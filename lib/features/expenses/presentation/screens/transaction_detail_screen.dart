@@ -8,6 +8,7 @@ import '../../../../core/config/app_env.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/enums/sync_status.dart';
+import '../../../../core/enums/transaction_type.dart';
 import '../../../../core/providers/session_provider.dart';
 import '../../../../core/utils/hex_color.dart';
 import '../../../../core/utils/money_formatter.dart';
@@ -75,8 +76,8 @@ Future<void> _confirmDelete(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Delete expense?'),
-      content: const Text('This expense will be removed.'),
+      title: const Text('Delete transaction?'),
+      content: const Text('This transaction will be removed.'),
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -106,9 +107,10 @@ class _Details extends ConsumerWidget {
     final theme = Theme.of(context);
     final category = ref.watch(categoriesByIdProvider)[expense.categoryId];
     final synced = expense.syncStatus == SyncStatus.synced;
+    final isIncome = expense.type == TransactionType.income;
     final title = expense.merchant?.isNotEmpty == true
         ? expense.merchant!
-        : (category?.name ?? 'Expense');
+        : (category?.name ?? (isIncome ? 'Income' : 'Expense'));
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 24),
@@ -125,9 +127,10 @@ class _Details extends ConsumerWidget {
             style:
                 theme.textTheme.titleMedium?.copyWith(color: theme.hintColor)),
         const SizedBox(height: 6),
-        Text('-${formatCents(expense.amountCents)}',
+        Text('${isIncome ? '+' : '-'}${formatCents(expense.amountCents)}',
             textAlign: TextAlign.center,
-            style: theme.textTheme.displaySmall),
+            style: theme.textTheme.displaySmall?.copyWith(
+                color: isIncome ? AppColors.success : null)),
         const SizedBox(height: AppSpacing.md),
         if (category != null) Center(child: _CategoryPill(category: category)),
         const SizedBox(height: AppSpacing.lg),
