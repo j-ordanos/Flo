@@ -88,7 +88,7 @@ class HomeHeader extends ConsumerWidget {
 }
 
 class _BellButton extends ConsumerWidget {
-  const _BellButton({Key? key}) : super(key: key);
+  const _BellButton({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -96,8 +96,10 @@ class _BellButton extends ConsumerWidget {
     return InkResponse(
       onTap: () async {
         final service = ref.read(notificationServiceProvider);
+        final messenger = ScaffoldMessenger.of(context);
         try {
           final notifs = await service.getNotifications();
+          if (!context.mounted) return;
           if (notifs.isEmpty) {
             final open = await showDialog<bool>(
               context: context,
@@ -118,7 +120,7 @@ class _BellButton extends ConsumerWidget {
                 ],
               ),
             );
-            if (open == true) {
+            if (open == true && context.mounted) {
               context.go(AppRoutes.profile);
             }
             return;
@@ -127,7 +129,7 @@ class _BellButton extends ConsumerWidget {
           // There are notifications: navigate to Profile and show a brief
           // message so the user knows there are outstanding notifications.
           context.go(AppRoutes.profile);
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             SnackBar(
               content: Text(
                 'You have ${notifs.length} notification(s). Check Notifications in Profile.',
@@ -137,6 +139,7 @@ class _BellButton extends ConsumerWidget {
         } catch (_) {
           // If notifications are unsupported, still navigate to Profile and
           // inform the user.
+          if (!context.mounted) return;
           context.go(AppRoutes.profile);
           await showDialog<void>(
             context: context,
