@@ -16,5 +16,6 @@ abstract interface class ExpenseRepository {
   });
   Stream<Expense?> watchExpense(String id);
   Stream<int> watchMonthlyTotal(String userId, DateTime month);
+  Stream<int> watchMonthlyIncome(String userId, DateTime month);
   Stream<Map<String, int>> watchTotalsByCategory(String userId, DateTime month);
 }

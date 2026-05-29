@@ -39,6 +39,10 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
       _dao.watchMonthlyTotal(userId, month);
 
   @override
+  Stream<int> watchMonthlyIncome(String userId, DateTime month) =>
+      _dao.watchMonthlyIncome(userId, month);
+
+  @override
   Stream<Map<String, int>> watchTotalsByCategory(
     String userId,
     DateTime month,

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../enums/sync_status.dart';
+import '../../enums/transaction_type.dart';
 import '../app_database.dart';
 import '../tables/expenses.dart';
 
@@ -62,8 +63,19 @@ class ExpenseDao extends DatabaseAccessor<AppDatabase> with _$ExpenseDaoMixin {
         ),
       );
 
-  /// Total cents spent in [month] (its calendar month), excluding deletes.
-  Stream<int> watchMonthlyTotal(String userId, DateTime month) {
+  /// Total cents spent (expenses only) in [month], excluding deletes.
+  Stream<int> watchMonthlyTotal(String userId, DateTime month) =>
+      _watchMonthlyByType(userId, month, TransactionType.expense);
+
+  /// Total cents earned (income only) in [month], excluding deletes.
+  Stream<int> watchMonthlyIncome(String userId, DateTime month) =>
+      _watchMonthlyByType(userId, month, TransactionType.income);
+
+  Stream<int> _watchMonthlyByType(
+    String userId,
+    DateTime month,
+    TransactionType type,
+  ) {
     final start = DateTime(month.year, month.month);
     final end = DateTime(month.year, month.month + 1);
     final total = expenses.amountCents.sum();
@@ -71,6 +83,7 @@ class ExpenseDao extends DatabaseAccessor<AppDatabase> with _$ExpenseDaoMixin {
       ..addColumns([total])
       ..where(
         expenses.userId.equals(userId) &
+            expenses.type.equalsValue(type) &
             expenses.deletedAt.isNull() &
             expenses.date.isBiggerOrEqualValue(start) &
             expenses.date.isSmallerThanValue(end),
@@ -78,7 +91,8 @@ class ExpenseDao extends DatabaseAccessor<AppDatabase> with _$ExpenseDaoMixin {
     return query.watchSingle().map((row) => row.read(total) ?? 0);
   }
 
-  /// Map of `categoryId -> total cents` for [month], excluding deletes.
+  /// Map of `categoryId -> total cents` for [month] (expenses only), excluding
+  /// deletes. Income is not categorised for budgets/analytics.
   Stream<Map<String, int>> watchTotalsByCategory(
     String userId,
     DateTime month,
@@ -90,6 +104,7 @@ class ExpenseDao extends DatabaseAccessor<AppDatabase> with _$ExpenseDaoMixin {
       ..addColumns([expenses.categoryId, total])
       ..where(
         expenses.userId.equals(userId) &
+            expenses.type.equalsValue(TransactionType.expense) &
             expenses.deletedAt.isNull() &
             expenses.date.isBiggerOrEqualValue(start) &
             expenses.date.isSmallerThanValue(end),

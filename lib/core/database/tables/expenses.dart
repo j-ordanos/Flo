@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../enums/sync_status.dart';
+import '../../enums/transaction_type.dart';
 
 /// Expense rows. Money is stored as integer cents; deletes are soft
 /// (`deletedAt`) so they can propagate during sync.
@@ -9,6 +10,8 @@ class Expenses extends Table {
   TextColumn get id => text()(); // client-generated UUID v4
   TextColumn get userId => text().named('user_id')();
   IntColumn get amountCents => integer().named('amount_cents')();
+  TextColumn get type => textEnum<TransactionType>()
+      .withDefault(const Constant('expense'))();
   TextColumn get categoryId => text().named('category_id')();
   TextColumn get merchant => text().nullable()();
   TextColumn get note => text().nullable()();
