@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
+import '../../../../core/config/app_env.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/router/app_routes.dart';
 import '../providers/auth_providers.dart';
@@ -30,6 +31,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       _snack('Please accept the Terms to continue.');
       return;
     }
+    if (!AppEnv.hasSupabase) {
+      _snack('Accounts are unavailable in this build.');
+      return;
+    }
     setState(() => _loading = true);
     try {
       final signedIn = await ref.read(authControllerProvider).signUp(
@@ -51,6 +56,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Future<void> _google() async {
+    if (!AppEnv.hasSupabase) {
+      _snack('Accounts are unavailable in this build.');
+      return;
+    }
     try {
       await ref.read(authControllerProvider).signInWithGoogle();
     } catch (_) {

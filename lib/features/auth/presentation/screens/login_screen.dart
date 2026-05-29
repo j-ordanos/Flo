@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
+import '../../../../core/config/app_env.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/widgets/flo_logo.dart';
@@ -25,6 +26,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!AppEnv.hasSupabase) {
+      _snack('Accounts are unavailable in this build.');
+      return;
+    }
     setState(() => _loading = true);
     try {
       await ref
@@ -40,6 +45,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _google() async {
+    if (!AppEnv.hasSupabase) {
+      _snack('Accounts are unavailable in this build.');
+      return;
+    }
     try {
       await ref.read(authControllerProvider).signInWithGoogle();
     } catch (_) {
