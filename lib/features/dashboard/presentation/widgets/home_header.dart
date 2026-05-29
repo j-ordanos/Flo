@@ -88,7 +88,7 @@ class HomeHeader extends ConsumerWidget {
 }
 
 class _BellButton extends ConsumerWidget {
-  const _BellButton({super.key});
+  const _BellButton();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
