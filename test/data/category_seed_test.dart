@@ -40,6 +40,7 @@ void main() {
         icon: d.icon,
         colorHex: d.colorHex,
         kind: CategoryKind.expense,
+        isDefault: true,
         createdAt: now,
         updatedAt: now,
         syncStatus: SyncStatus.synced,
