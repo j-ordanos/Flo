@@ -1,5 +1,6 @@
 import '../../../core/database/app_database.dart';
 import '../../../core/enums/budget_period.dart';
+import '../../../core/enums/category_kind.dart';
 import '../../../core/enums/sync_status.dart';
 import '../../../core/enums/transaction_type.dart';
 

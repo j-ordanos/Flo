@@ -1,6 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flo/core/constants/app_constants.dart';
 import 'package:flo/core/database/app_database.dart';
+import 'package:flo/core/enums/category_kind.dart';
 import 'package:flo/core/enums/sync_status.dart';
 import 'package:flo/core/enums/transaction_type.dart';
 import 'package:flo/features/categories/data/repositories/category_repository_impl.dart';
@@ -24,6 +25,7 @@ void main() {
       name: icon,
       icon: icon,
       colorHex: 'F59E0B',
+      kind: CategoryKind.expense,
       isDefault: true,
       createdAt: now,
       updatedAt: now,

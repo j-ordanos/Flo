@@ -1,6 +1,7 @@
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/daos/category_dao.dart';
+import '../../../../core/enums/category_kind.dart';
 import '../../../../core/enums/sync_status.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/repositories/category_repository.dart';
