@@ -4,7 +4,7 @@
 
 **Personal finance, simplified.**
 
-Track expenses, set budgets, and understand your money —
+Track expenses, set budgets, and understand your Spendings —
 offline-first with optional cloud sync.
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
@@ -44,15 +44,15 @@ offline-first with optional cloud sync.
 
 ## Features
 
-- **Expense & Income Logging** — amount keypad, category, date, and optional note
-- **Dashboard** — monthly spending, income, balance, and budget health at a glance
-- **Category Budgets** — set monthly limits, track remaining, get alerted on overages
-- **Analytics** — bar charts and category breakdowns by day, week, or month
-- **Receipt Capture** — attach photos to any transaction (requires Supabase)
-- **CSV Export** — share reports via the system share sheet
-- **Push Notifications** — local budget-overage alerts
-- **Offline-first** — all data lives locally; Supabase is optional
-- **Cloud Sync** — sign in to sync across devices with conflict-safe merging
+Expense & Income Logging — amount keypad, category, date, and optional notes
+Dashboard — monthly expenses, income, balance, and budget status at a glance
+Category Budgets — set monthly limits, track remaining budget, and get overage alerts
+Analytics — bar charts and category breakdowns by day, week, or month
+Receipt Capture — attach receipt photos to transactions (requires Supabase)
+CSV Export — export and share reports via the system share sheet
+Push Notifications — local alerts for budget overages
+Offline-First — all data is stored locally; Supabase is optional
+Cloud Sync — sign in to sync across devices with safe conflict resolution
 
 ---
 
