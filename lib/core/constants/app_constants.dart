@@ -16,8 +16,10 @@ const String kGuestModeKey = 'guest_mode';
 /// intent-filter, iOS URL scheme, and Supabase allowed redirect URLs).
 const String kOAuthRedirect = 'com.jordanos.flo://login-callback';
 
-/// Namespace for deterministic category UUIDs (any fixed valid UUID works).
-const String _kCategoryNamespace = '6f9619ff-8b86-d011-b42d-00c04fc964ff';
+/// Namespace for deterministic category UUIDs. Must be a valid RFC-4122 UUID
+/// (the uuid package validates the version/variant nibbles); this is the
+/// standard DNS namespace.
+const String _kCategoryNamespace = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
 /// Deterministic id for a seeded default category. Stable per (user, kind, icon)
 /// so re-seeding across installs/logins is idempotent — upsert/insert-or-ignore
