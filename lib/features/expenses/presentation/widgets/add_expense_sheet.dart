@@ -180,35 +180,61 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
       ),
       child: SingleChildScrollView(
+        reverse: true,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Text(_isEdit ? 'Edit $_typeWord' : 'New $_typeWord',
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700)),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _TypeToggle(
-              value: _type,
-              onChanged: (t) => setState(() => _type = t),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text('AMOUNT',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.labelSmall
-                    ?.copyWith(color: theme.hintColor, letterSpacing: 0.6)),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Pinned top: title, type, category strip + note/date. Set these once.
+          Center(
+            child: Text(_isEdit ? 'Edit $_typeWord' : 'New $_typeWord',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _TypeToggle(
+            value: _type,
+            onChanged: (t) => setState(() => _type = t),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _CategoryStrip(
+            categories: categories,
+            selectedId: _categoryId,
+            income: _isIncome,
+            onSelect: (id) => setState(() => _categoryId = id),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _note,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    hintText: 'Add a note',
+                    prefixIcon: Icon(Icons.edit_outlined, size: 18),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              _DateButton(date: _date, onTap: _pickDate),
+            ],
+          ),
+          // Amount sits directly above the keypad so it's always in view while
+          // typing — no scrolling back and forth.
+          const SizedBox(height: AppSpacing.md),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(top: 8, right: 2),
+                  padding: const EdgeInsets.only(top: 6, right: 2),
                   child: Text(_isIncome ? '+${Money.symbol}' : Money.symbol,
                       style: TextStyle(
-                          fontSize: 28,
+                          fontSize: 26,
                           fontWeight: FontWeight.w600,
                           color: _isIncome && !isZero
                               ? AppColors.success
@@ -217,7 +243,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
                 Text(
                   _amount,
                   style: TextStyle(
-                    fontSize: 52,
+                    fontSize: 48,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -1.5,
                     color: isZero
@@ -229,49 +255,21 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.lg),
-            Text('CATEGORY',
-                style: theme.textTheme.labelSmall
-                    ?.copyWith(color: theme.hintColor, letterSpacing: 0.4)),
-            const SizedBox(height: AppSpacing.sm),
-            _CategoryGrid(
-              categories: categories,
-              selectedId: _categoryId,
-              income: _isIncome,
-              onSelect: (id) => setState(() => _categoryId = id),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _note,
-                    textInputAction: TextInputAction.done,
-                    decoration: const InputDecoration(
-                      hintText: 'Add a note',
-                      prefixIcon: Icon(Icons.edit_outlined, size: 18),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                _DateButton(date: _date, onTap: _pickDate),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            NumPad(onKey: _onKey),
-            const SizedBox(height: AppSpacing.md),
-            FilledButton(
-              onPressed: _canSave ? _save : null,
-              child: _saving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(_isEdit ? 'Save changes' : 'Save $_typeWord'),
-            ),
-          ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          NumPad(onKey: _onKey),
+          const SizedBox(height: AppSpacing.sm),
+          FilledButton(
+            onPressed: _canSave ? _save : null,
+            child: _saving
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(_isEdit ? 'Save changes' : 'Save $_typeWord'),
+          ),
+        ],
         ),
       ),
     );
@@ -385,8 +383,10 @@ class _DateButton extends StatelessWidget {
   }
 }
 
-class _CategoryGrid extends StatelessWidget {
-  const _CategoryGrid({
+/// Horizontal, single-row category picker. Keeps the sheet short so the amount
+/// and keypad stay on screen while typing. Selected chip auto-scrolls into view.
+class _CategoryStrip extends StatelessWidget {
+  const _CategoryStrip({
     required this.categories,
     required this.selectedId,
     required this.income,
@@ -402,32 +402,36 @@ class _CategoryGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     if (categories.isEmpty) {
       return const SizedBox(
-        height: 72,
+        height: 84,
         child: Center(child: Text('No categories yet')),
       );
     }
-    return GridView.count(
-      crossAxisCount: 4,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.sm,
-      crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 0.82,
-      children: [
-        for (final c in categories)
-          _CategoryTile(
+    return SizedBox(
+      height: 84,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.zero,
+        physics: const BouncingScrollPhysics(),
+        itemCount: categories.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (context, i) {
+          if (i == categories.length) {
+            return _AddCategoryChip(income: income, onCreated: onSelect);
+          }
+          final c = categories[i];
+          return _CategoryChip(
             category: c,
             selected: c.id == selectedId,
             onTap: () => onSelect(c.id),
-          ),
-        _AddCategoryTile(income: income, onCreated: onSelect),
-      ],
+          );
+        },
+      ),
     );
   }
 }
 
-class _AddCategoryTile extends StatelessWidget {
-  const _AddCategoryTile({required this.income, required this.onCreated});
+class _AddCategoryChip extends StatelessWidget {
+  const _AddCategoryChip({required this.income, required this.onCreated});
 
   final bool income;
   final ValueChanged<String> onCreated;
@@ -436,17 +440,17 @@ class _AddCategoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
-    return Material(
-      color: dark ? AppColors.darkSurfaceAlt : AppColors.lightSurfaceAlt,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: InkWell(
-        onTap: () async {
-          final id = await showAddCategorySheet(context, income: income);
-          if (id != null) onCreated(id);
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+    return SizedBox(
+      width: 64,
+      child: Material(
+        color: dark ? AppColors.darkSurfaceAlt : AppColors.lightSurfaceAlt,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: InkWell(
+          onTap: () async {
+            final id = await showAddCategorySheet(context, income: income);
+            if (id != null) onCreated(id);
+          },
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -472,8 +476,8 @@ class _AddCategoryTile extends StatelessWidget {
   }
 }
 
-class _CategoryTile extends StatelessWidget {
-  const _CategoryTile({
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
     required this.category,
     required this.selected,
     required this.onTap,
@@ -487,33 +491,37 @@ class _CategoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
-    return Material(
-      color: dark ? AppColors.darkSurfaceAlt : AppColors.lightSurfaceAlt,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: selected ? theme.colorScheme.primary : Colors.transparent,
-          width: 1.5,
+    return SizedBox(
+      width: 64,
+      child: Material(
+        color: dark ? AppColors.darkSurfaceAlt : AppColors.lightSurfaceAlt,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+            color: selected ? theme.colorScheme.primary : Colors.transparent,
+            width: 1.5,
+          ),
         ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+        child: InkWell(
+          onTap: onTap,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CategoryAvatar(
-                  iconKey: category.icon, colorHex: category.colorHex, size: 36),
+                  iconKey: category.icon, colorHex: category.colorHex, size: 34),
               const SizedBox(height: 6),
-              Text(
-                category.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: selected ? theme.colorScheme.primary : null,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Text(
+                  category.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: selected ? theme.colorScheme.primary : null,
+                  ),
                 ),
               ),
             ],
