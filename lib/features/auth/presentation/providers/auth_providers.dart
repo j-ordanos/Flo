@@ -6,6 +6,7 @@ import '../../../../core/providers/database_provider.dart';
 import '../../../../core/providers/preferences_provider.dart';
 import '../../../../core/providers/supabase_provider.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
+import '../../../../features/sync/presentation/providers/sync_providers.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 
@@ -88,6 +89,13 @@ class AuthController {
       await db.dedupeDefaultCategories(userId);
     } finally {
       _runningPostSignIn = false;
+    }
+    // Ensure a sync is requested only after migrations and seeding are finished
+    // so legacy non-UUID ids are corrected before any upload attempts.
+    try {
+      _ref.read(syncControllerProvider.notifier).requestSync();
+    } catch (_) {
+      // Best-effort; don't surface sync failures here.
     }
   }
 }

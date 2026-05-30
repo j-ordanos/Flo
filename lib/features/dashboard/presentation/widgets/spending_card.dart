@@ -82,7 +82,7 @@ class SpendingCard extends StatelessWidget {
                         ?.copyWith(color: theme.hintColor)),
                 const SizedBox(height: 4),
                 if (hasBudget) ...[
-                  Text(formatCents0(remaining.clamp(0, remaining)),
+                  Text(formatCents0(math.max(0, remaining)),
                       style: theme.textTheme.headlineSmall),
                   Text(remaining >= 0 ? 'left to spend' : 'over budget',
                       style: theme.textTheme.bodyMedium
