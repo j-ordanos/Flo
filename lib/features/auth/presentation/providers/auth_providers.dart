@@ -26,8 +26,9 @@ class OnboardingNotifier extends Notifier<bool> {
   }
 }
 
-final onboardingSeenProvider =
-    NotifierProvider<OnboardingNotifier, bool>(OnboardingNotifier.new);
+final onboardingSeenProvider = NotifierProvider<OnboardingNotifier, bool>(
+  OnboardingNotifier.new,
+);
 
 /// Coordinates auth actions with their local side effects (data migration +
 /// default-category seeding for the signed-in user).
@@ -44,11 +45,9 @@ class AuthController {
   /// Returns true when a session started immediately (email confirmation off),
   /// false when the user must confirm their email before signing in.
   Future<bool> signUp(String name, String email, String password) async {
-    await _ref.read(authRepositoryProvider).signUpWithEmail(
-          email: email,
-          password: password,
-          name: name,
-        );
+    await _ref
+        .read(authRepositoryProvider)
+        .signUpWithEmail(email: email, password: password, name: name);
     return Supabase.instance.client.auth.currentUser != null;
   }
 

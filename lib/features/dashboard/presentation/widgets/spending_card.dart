@@ -30,10 +30,10 @@ class SpendingCard extends StatelessWidget {
     final ringColor = !hasBudget
         ? theme.colorScheme.primary
         : pct > 0.9
-            ? AppColors.danger
-            : pct > 0.75
-                ? AppColors.warning
-                : theme.colorScheme.primary;
+        ? AppColors.danger
+        : pct > 0.75
+        ? AppColors.warning
+        : theme.colorScheme.primary;
     final remaining = budgetCents - spentCents;
 
     return AppCard(
@@ -55,18 +55,26 @@ class SpendingCard extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('SPENT',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.hintColor,
-                          letterSpacing: 0.5,
-                        )),
+                    Text(
+                      'SPENT',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.hintColor,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(formatCents0(spentCents),
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w700)),
-                    Text(hasBudget ? 'of ${formatCents0(budgetCents)}' : 'spent',
-                        style: theme.textTheme.labelSmall
-                            ?.copyWith(color: theme.hintColor)),
+                    Text(
+                      formatCents0(spentCents),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      hasBudget ? 'of ${formatCents0(budgetCents)}' : 'spent',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.hintColor,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -77,25 +85,41 @@ class SpendingCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(DateFormat.yMMMM().format(DateTime.now()),
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: theme.hintColor)),
+                Text(
+                  DateFormat.yMMMM().format(DateTime.now()),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.hintColor,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 if (hasBudget) ...[
-                  Text(formatCents0(math.max(0, remaining)),
-                      style: theme.textTheme.headlineSmall),
-                  Text(remaining >= 0 ? 'left to spend' : 'over budget',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: theme.hintColor)),
+                  Text(
+                    formatCents0(math.max(0, remaining)),
+                    style: theme.textTheme.headlineSmall,
+                  ),
+                  Text(
+                    remaining >= 0 ? 'left to spend' : 'over budget',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  ),
                 ] else ...[
-                  Text(formatCents0(spentCents),
-                      style: theme.textTheme.headlineSmall),
-                  Text('Set a budget to track',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: theme.hintColor)),
+                  Text(
+                    formatCents0(spentCents),
+                    style: theme.textTheme.headlineSmall,
+                  ),
+                  Text(
+                    'Set a budget to track',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  ),
                 ],
                 const SizedBox(height: AppSpacing.md),
-                _TrendChip(spentCents: spentCents, lastMonthCents: lastMonthCents),
+                _TrendChip(
+                  spentCents: spentCents,
+                  lastMonthCents: lastMonthCents,
+                ),
               ],
             ),
           ),
@@ -115,8 +139,10 @@ class _TrendChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     if (lastMonthCents <= 0) {
-      return Text('No prior month yet',
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor));
+      return Text(
+        'No prior month yet',
+        style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+      );
     }
     final delta = (spentCents - lastMonthCents) / lastMonthCents;
     final under = delta <= 0;
@@ -125,14 +151,19 @@ class _TrendChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(under ? Icons.trending_down : Icons.trending_up,
-            size: 15, color: color),
+        Icon(
+          under ? Icons.trending_down : Icons.trending_up,
+          size: 15,
+          color: color,
+        ),
         const SizedBox(width: 6),
         Flexible(
           child: Text(
             '$pct% ${under ? 'under' : 'over'} last month',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: color, fontWeight: FontWeight.w600),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
