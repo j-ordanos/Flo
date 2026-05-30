@@ -1,150 +1,119 @@
-# Flo
+<div align="center">
 
-Flo is a Flutter personal finance app for tracking expenses, income, category
-budgets, and spending trends.
+# 💸 Flo
 
-The app is local-first: transactions, categories, and budgets are stored in a
-local Drift/SQLite database and the core app works without a network account.
-When Supabase keys are provided at build time, Flo also enables sign-in,
-cloud sync, and receipt storage.
+**Personal finance, simplified.**
 
-## Current Functionality
+Track expenses, set budgets, and understand your money —
+offline-first with optional cloud sync.
 
-- Log expenses and income with an amount keypad, category, date, and optional
-  note.
-- View, edit, and delete transactions from a detail screen.
-- Attach receipt images to transactions when signed in with Supabase.
-- Seed default expense and income categories, then create or edit your own
-  categories.
-- Track the current month from the dashboard with spending, income, balance,
-  budget health, and recent transactions.
-- Create monthly category budgets and see total usage, remaining budget, days
-  left, and over-budget states.
-- Review analytics by day, week, or month with bar charts, category breakdowns,
-  income-vs-spending totals, and CSV export through the system share sheet.
-- Manage profile preferences such as currency, dark mode, notifications,
-  budget alerts, category settings, CSV export, and sign-in/sign-out.
-- Use the app as a guest/local account, then migrate local data to a Supabase
-  account after sign-in.
-- Sync categories, expenses, and budgets through Supabase with pending local
-  edits protected from being overwritten by older remote data.
-- Receive local budget-overage notifications when push notifications and budget
-  alerts are enabled.
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)](https://dart.dev)
+[![Supabase](https://img.shields.io/badge/Supabase-optional-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-lightgrey?logo=android)](/)
 
-## Current Limits
+[**⬇ Download APK**](https://github.com/j-ordanos/Flo/releases/latest/download/app-release.apk) &nbsp;·&nbsp; [Report a Bug](https://github.com/j-ordanos/Flo/issues)
 
-- Goal tracking is not implemented yet, even though onboarding currently
-  references future saving goals.
-- Password reset shows a placeholder message.
-- Google sign-in requires Supabase OAuth and platform redirect/deep-link setup.
-- Receipt upload requires the Supabase `receipts` storage bucket and policies
-  from the provided migrations.
+</div>
+
+---
+
+## Demo
+
+<div align="center">
+  <video src="res/video/demo.mp4" width="320" controls></video>
+  <br/>
+  <sub><i>Screen recording of the app in action</i></sub>
+</div>
+
+---
+
+## Screenshots
+
+<div align="center">
+  <img src="res/screenshots/dashboard.png" width="200" alt="Dashboard" />
+  &nbsp;
+  <img src="res/screenshots/analytics.png" width="200" alt="Analytics" />
+  &nbsp;
+  <img src="res/screenshots/budgets.png" width="200" alt="Budgets" />
+</div>
+
+---
+
+## Features
+
+- **Expense & Income Logging** — amount keypad, category, date, and optional note
+- **Dashboard** — monthly spending, income, balance, and budget health at a glance
+- **Category Budgets** — set monthly limits, track remaining, get alerted on overages
+- **Analytics** — bar charts and category breakdowns by day, week, or month
+- **Receipt Capture** — attach photos to any transaction (requires Supabase)
+- **CSV Export** — share reports via the system share sheet
+- **Push Notifications** — local budget-overage alerts
+- **Offline-first** — all data lives locally; Supabase is optional
+- **Cloud Sync** — sign in to sync across devices with conflict-safe merging
+
+---
 
 ## Tech Stack
 
-- Flutter and Dart
-- Riverpod for state management and dependency injection
-- GoRouter for nested shell navigation and auth/onboarding redirects
-- Drift with SQLite for local reactive storage
-- Supabase Auth, Postgres, and Storage for optional cloud features
-- `fl_chart` for analytics charts
-- `csv` and `share_plus` for report export
-- `flutter_local_notifications` for budget alerts
-- `image_picker` for receipt capture and gallery selection
+| Layer | Technology |
+|---|---|
+| Framework | Flutter + Dart |
+| State management | Riverpod |
+| Navigation | GoRouter |
+| Local database | Drift / SQLite |
+| Cloud | Supabase (Auth, Postgres, Storage) |
+| Charts | fl_chart |
+| Notifications | flutter_local_notifications |
+
+---
 
 ## Getting Started
 
-Install dependencies:
+### 1 — Install dependencies
 
 ```bash
 flutter pub get
-```
-
-Generate the Drift, DAO, and Freezed files:
-
-```bash
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-Run locally without Supabase:
+### 2 — Run (local-only, no account needed)
 
 ```bash
 flutter run
 ```
 
-In this mode, Flo stores data locally and skips auth/sync.
-
-## Supabase Setup
-
-Supabase is optional, but required for accounts, multi-device sync, and receipt
-uploads.
-
-1. Create a Supabase project.
-2. Run every SQL file in `supabase/migrations` in order:
-   `0001_initial_schema.sql`, `0002_receipts.sql`,
-   `0003_transaction_type.sql`, and `0004_category_kind.sql`.
-3. Copy `env/example.json` to `env/dev.json`.
-4. Add your Supabase project URL and anon public key to `env/dev.json`.
-5. Run the app with the env file:
+### 3 — Run with Supabase (accounts + cloud sync)
 
 ```bash
+cp env/example.json env/dev.json
+# Open env/dev.json and fill in your Supabase URL and anon key
 flutter run --dart-define-from-file=env/dev.json
 ```
 
-On Windows PowerShell, the copy step is:
-
-```powershell
-Copy-Item env/example.json env/dev.json
-```
-
-The anon key is the public client key. Do not put a Supabase service-role key in
-the app.
-
-## Sharing a Test APK
-
-The Supabase values are compile-time constants, so release builds need the env
-file passed during build:
+### 4 — Build a release APK
 
 ```bash
-flutter build apk --release --dart-define-from-file=env/dev.json
+bash scripts/build_apk.sh
+# Output: build/app/outputs/flutter-apk/app-release.apk
 ```
 
-If you are using Git Bash or another Bash shell, the helper script does the same
-thing:
+---
 
-```bash
-./scripts/build_apk.sh
-```
+<details>
+<summary><b>Supabase — database migrations</b></summary>
 
-The APK is written to `build/app/outputs/flutter-apk/app-release.apk`.
+Create a Supabase project, open the SQL editor, and run each file in `supabase/migrations/` in order:
 
-## Testing
+1. `0001_initial_schema.sql`
+2. `0002_receipts.sql`
+3. `0003_transaction_type.sql`
+4. `0004_category_kind.sql`
 
-Run the test suite with:
+</details>
 
-```bash
-flutter test
-```
+---
 
-## Project Layout
-
-- `lib/main.dart` initializes Flutter, optional Supabase, preferences, default
-  categories, notifications, sync triggers, and the app router.
-- `lib/core` contains routing, theme, constants, shared widgets, providers,
-  money formatting, and the Drift database.
-- `lib/features/expenses` contains transaction models, repositories, CSV export,
-  receipt upload, add/edit UI, and transaction detail UI.
-- `lib/features/categories` contains default category seeding, category
-  management, icons, and category pickers.
-- `lib/features/budgets` contains category budget models, repositories,
-  providers, and budget UI.
-- `lib/features/analytics` contains the analytics screen, period filters, charts,
-  category totals, and export actions.
-- `lib/features/auth` contains Supabase email/password auth, Google OAuth entry
-  points, guest mode, and local-data migration after sign-in.
-- `lib/features/sync` contains Supabase push/pull sync and conflict handling.
-- `lib/features/notifications` contains local notification setup and budget
-  alert delivery.
-- `lib/features/profile` contains user/account display and app preferences.
-- `supabase/migrations` contains the backend schema, RLS policies, receipt
-  storage setup, and schema updates needed by the app.
+<div align="center">
+  <sub>Built with ❤️ using Flutter</sub>
+</div>
