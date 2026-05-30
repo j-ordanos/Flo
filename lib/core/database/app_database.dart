@@ -3,6 +3,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 
 import '../constants/app_constants.dart';
 import '../enums/budget_period.dart';
+import '../enums/category_kind.dart';
 import '../enums/sync_operation.dart';
 import '../enums/sync_status.dart';
 import '../enums/transaction_type.dart';
