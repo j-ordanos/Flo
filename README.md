@@ -1,6 +1,8 @@
 <div align="center">
 
-# 💸 Flo
+<img src="assets/icon/icon_foreground.png" width="100" alt="Flo Icon" />
+
+# Flo
 
 **Personal finance, simplified.**
 
@@ -31,11 +33,13 @@ offline-first with optional cloud sync.
 ## Screenshots
 
 <div align="center">
-  <img src="res/screenshots/dashboard.png" width="200" alt="Dashboard" />
+  <img src="res/screenshots/dashboard.jpg" width="200" alt="Dashboard" />
   &nbsp;
-  <img src="res/screenshots/analytics.png" width="200" alt="Analytics" />
+  <img src="res/screenshots/analytics.jpg" width="200" alt="Analytics" />
   &nbsp;
-  <img src="res/screenshots/budgets.png" width="200" alt="Budgets" />
+  <img src="res/screenshots/budget.jpg" width="200" alt="Budgets" />
+  &nbsp;
+  <img src="res/screenshots/profile.jpg" width="200" alt="Profile" />
 </div>
 
 ---
@@ -56,15 +60,15 @@ offline-first with optional cloud sync.
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Flutter + Dart |
-| State management | Riverpod |
-| Navigation | GoRouter |
-| Local database | Drift / SQLite |
-| Cloud | Supabase (Auth, Postgres, Storage) |
-| Charts | fl_chart |
-| Notifications | flutter_local_notifications |
+| Layer            | Technology                         |
+| ---------------- | ---------------------------------- |
+| Framework        | Flutter + Dart                     |
+| State management | Riverpod                           |
+| Navigation       | GoRouter                           |
+| Local database   | Drift / SQLite                     |
+| Cloud            | Supabase (Auth, Postgres, Storage) |
+| Charts           | fl_chart                           |
+| Notifications    | flutter_local_notifications        |
 
 ---
 
@@ -111,9 +115,3 @@ Create a Supabase project, open the SQL editor, and run each file in `supabase/m
 4. `0004_category_kind.sql`
 
 </details>
-
----
-
-<div align="center">
-  <sub>Built with ❤️ using Flutter</sub>
-</div>
