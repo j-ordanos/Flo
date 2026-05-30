@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="assets/icon/icon_foreground.png" width="100" alt="Flo Icon" />
-
-# Flo
+<img src="assets/icon/icon_foreground.png" width="300" alt="Flo Icon" />
 
 **Personal finance, simplified.**
 
