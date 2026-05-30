@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config/app_env.dart';
 import 'core/constants/app_constants.dart';
+import 'core/providers/database_provider.dart';
 import 'core/providers/preferences_provider.dart';
 import 'core/providers/session_provider.dart';
 import 'core/router/app_router.dart';
@@ -39,6 +40,7 @@ Future<void> main() async {
   // seeded in onAuthenticated. Cheap — seedDefaultsIfEmpty no-ops if present.
   final localOwnerId = container.read(currentUserIdProvider);
   if (localOwnerId == kLocalUserId) {
+    await container.read(databaseProvider).migrateNonUuidCategoryIds(localOwnerId);
     final categories = container.read(categoryRepositoryProvider);
     await categories.seedDefaultsIfEmpty(localOwnerId);
     await categories.seedIncomeDefaultsIfMissing(localOwnerId);

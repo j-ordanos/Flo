@@ -84,4 +84,52 @@ void main() {
     // Idempotent: a second pass changes nothing.
     expect(await db.dedupeDefaultCategories('u1'), isFalse);
   });
+
+  test('migrateNonUuidCategoryIds re-ids legacy rows to valid UUIDs', () async {
+    // Legacy default + custom rows with the old non-UUID id scheme.
+    await db.categoryDao.upsert(cat('cat_u1_expense_food', 'food'));
+    final now = DateTime.utc(2026, 5, 2);
+    await db.categoryDao.upsert(CategoryRow(
+      id: 'cat_u1_expense_custom',
+      userId: 'u1',
+      name: 'Custom',
+      icon: 'other',
+      colorHex: 'EF4444',
+      kind: CategoryKind.expense,
+      isDefault: false,
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: SyncStatus.synced,
+    ));
+    await db.expenseDao.upsert(ExpenseRow(
+      id: 'e1',
+      userId: 'u1',
+      amountCents: 1000,
+      type: TransactionType.expense,
+      categoryId: 'cat_u1_expense_food',
+      date: now,
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: SyncStatus.synced,
+    ));
+
+    final changed = await db.migrateNonUuidCategoryIds('u1');
+    expect(changed, isTrue);
+
+    final live = await db.categoryDao.getCategories('u1');
+    // Every id is now a valid UUID (safe to push to a `uuid` column).
+    expect(live.every((c) => isValidUuid(c.id)), isTrue);
+    // The default got the deterministic canonical UUID.
+    expect(
+      live.any((c) => c.id == defaultCategoryId('u1', 'expense', 'food')),
+      isTrue,
+    );
+    // The expense was repointed to the new default id and marked pending.
+    final e = await db.expenseDao.findById('e1');
+    expect(e!.categoryId, defaultCategoryId('u1', 'expense', 'food'));
+    expect(e.syncStatus, SyncStatus.pending);
+
+    // Idempotent: nothing left to migrate.
+    expect(await db.migrateNonUuidCategoryIds('u1'), isFalse);
+  });
 }

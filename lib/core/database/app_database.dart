@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 import '../constants/app_constants.dart';
 import '../enums/budget_period.dart';
@@ -43,6 +44,52 @@ class AppDatabase extends _$AppDatabase {
           }
         },
       );
+
+  /// Fixes legacy categories whose id isn't a valid UUID (the old
+  /// `cat_<user>_<kind>_<icon>` scheme), which Supabase rejected on sync because
+  /// `categories.id` is type `uuid`. For each bad row: create the canonical row
+  /// under a valid UUID (deterministic for defaults, random for custom),
+  /// repoint expenses/budgets, then hard-delete the bad row (it never synced, so
+  /// nothing to propagate). Returns true if anything was migrated.
+  Future<bool> migrateNonUuidCategoryIds(String userId) {
+    return transaction(() async {
+      final all = await (select(categories)
+            ..where((c) => c.userId.equals(userId)))
+          .get();
+      final now = DateTime.now().toUtc();
+      var changed = false;
+      for (final c in all) {
+        if (isValidUuid(c.id)) continue;
+        changed = true;
+        final newId = c.isDefault
+            ? defaultCategoryId(userId, c.kind.name, c.icon)
+            : const Uuid().v4();
+
+        final existing = await (select(categories)
+              ..where((t) => t.id.equals(newId)))
+            .getSingleOrNull();
+        if (existing == null) {
+          await into(categories).insert(
+            c.copyWith(id: newId, updatedAt: now, syncStatus: SyncStatus.pending),
+          );
+        }
+        await (update(expenses)..where((e) => e.categoryId.equals(c.id)))
+            .write(ExpensesCompanion(
+          categoryId: Value(newId),
+          updatedAt: Value(now),
+          syncStatus: const Value(SyncStatus.pending),
+        ));
+        await (update(budgets)..where((b) => b.categoryId.equals(c.id)))
+            .write(BudgetsCompanion(
+          categoryId: Value(newId),
+          updatedAt: Value(now),
+          syncStatus: const Value(SyncStatus.pending),
+        ));
+        await (delete(categories)..where((t) => t.id.equals(c.id))).go();
+      }
+      return changed;
+    });
+  }
 
   /// Collapses duplicate default categories that accumulated from re-seeding
   /// across installs/logins (each used to get a random id). Groups live default

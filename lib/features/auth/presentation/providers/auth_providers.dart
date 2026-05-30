@@ -79,6 +79,8 @@ class AuthController {
       if (userId == null) return;
       final db = _ref.read(databaseProvider);
       await db.reassignLocalUserData(userId);
+      // Repair legacy non-UUID category ids before anything tries to sync them.
+      await db.migrateNonUuidCategoryIds(userId);
       final categories = _ref.read(categoryRepositoryProvider);
       await categories.seedDefaultsIfEmpty(userId);
       await categories.seedIncomeDefaultsIfMissing(userId);
