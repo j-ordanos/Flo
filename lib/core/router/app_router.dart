@@ -38,16 +38,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       if (!AppEnv.hasSupabase) return null;
 
       final loggedIn = Supabase.instance.client.auth.currentUser != null;
-      final onboarded =
-          ref.read(sharedPreferencesProvider).getBool(kOnboardingSeenKey) ??
-              false;
+      final prefs = ref.read(sharedPreferencesProvider);
+      final onboarded = prefs.getBool(kOnboardingSeenKey) ?? false;
+      final guest = prefs.getBool(kGuestModeKey) ?? false;
       final location = state.matchedLocation;
       final atOnboarding = location == AppRoutes.onboarding;
       final atAuth =
           location == AppRoutes.login || location == AppRoutes.signup;
 
       if (!onboarded && !atOnboarding) return AppRoutes.onboarding;
-      if (onboarded && !loggedIn && !atAuth) return AppRoutes.login;
+      // Guests use the app locally; only force login when not a guest.
+      if (onboarded && !loggedIn && !guest && !atAuth) return AppRoutes.login;
       if (loggedIn && (atAuth || atOnboarding)) return AppRoutes.home;
       return null;
     },

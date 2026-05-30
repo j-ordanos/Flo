@@ -54,7 +54,17 @@ class AuthController {
   Future<void> signInWithGoogle() =>
       _ref.read(authRepositoryProvider).signInWithGoogle();
 
-  Future<void> signOut() => _ref.read(authRepositoryProvider).signOut();
+  /// Lets the user into the app locally without an account. Data created as a
+  /// guest migrates to their account on a later sign-in via [onAuthenticated].
+  Future<void> continueAsGuest() =>
+      _ref.read(sharedPreferencesProvider).setBool(kGuestModeKey, true);
+
+  /// Signs out but keeps the app usable: drop back into local (guest) mode
+  /// instead of a locked login screen. Cloud data reappears on next sign-in.
+  Future<void> signOut() async {
+    await _ref.read(sharedPreferencesProvider).setBool(kGuestModeKey, true);
+    await _ref.read(authRepositoryProvider).signOut();
+  }
 
   /// Local side effects to run whenever a user signs in (any method). Idempotent
   /// — migrates offline data to the user and ensures default categories exist.

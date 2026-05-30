@@ -5,6 +5,11 @@ const String kLocalUserId = 'local-user';
 /// SharedPreferences key for the "onboarding completed" flag.
 const String kOnboardingSeenKey = 'onboarding_seen';
 
+/// SharedPreferences flag: the user chose to use the app locally without an
+/// account. Their data lives under [kLocalUserId] and migrates to their account
+/// if they sign in later.
+const String kGuestModeKey = 'guest_mode';
+
 /// Deep-link the OAuth provider redirects back to (must match the Android
 /// intent-filter, iOS URL scheme, and Supabase allowed redirect URLs).
 const String kOAuthRedirect = 'com.jordanos.flo://login-callback';

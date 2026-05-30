@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config/app_env.dart';
+import 'core/constants/app_constants.dart';
 import 'core/providers/preferences_provider.dart';
 import 'core/providers/session_provider.dart';
 import 'core/router/app_router.dart';
@@ -33,13 +34,14 @@ Future<void> main() async {
 
   // Initialize the active currency symbol from prefs before first paint.
   container.read(currencyProvider);
-  // In local-only mode, seed default categories now. In auth mode they're
-  // seeded for the user on sign-in.
-  if (!AppEnv.hasSupabase) {
-    final userId = container.read(currentUserIdProvider);
+  // Seed defaults for whoever owns local data right now: local-only mode or a
+  // signed-out/guest user (currentUserId == kLocalUserId). Signed-in users are
+  // seeded in onAuthenticated. Cheap — seedDefaultsIfEmpty no-ops if present.
+  final localOwnerId = container.read(currentUserIdProvider);
+  if (localOwnerId == kLocalUserId) {
     final categories = container.read(categoryRepositoryProvider);
-    await categories.seedDefaultsIfEmpty(userId);
-    await categories.refreshDefaultStyles(userId);
+    await categories.seedDefaultsIfEmpty(localOwnerId);
+    await categories.refreshDefaultStyles(localOwnerId);
   }
 
   runApp(

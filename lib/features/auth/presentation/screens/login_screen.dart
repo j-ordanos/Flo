@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 import '../../../../core/config/app_env.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/router/app_routes.dart';
-import '../../../../core/widgets/flo_logo.dart';
 import '../providers/auth_providers.dart';
 import '../widgets/or_divider.dart';
 
@@ -56,6 +55,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _continueAsGuest() async {
+    await ref.read(authControllerProvider).continueAsGuest();
+    if (mounted) context.go(AppRoutes.home);
+  }
+
   void _snack(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -83,16 +87,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: AppSpacing.md),
-                Row(
-                  children: [
-                    const FloLogo(size: 40),
-                    const SizedBox(width: 12),
-                    Text('Flo',
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w700)),
-                  ],
+                Center(
+                  child: Image.asset(
+                    'assets/icon/icon_foreground.png',
+                    height: 120,
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: AppSpacing.lg),
                 Text('Welcome back', style: theme.textTheme.headlineMedium),
                 const SizedBox(height: AppSpacing.xs),
                 Text('Sign in to keep your money in flow.',
@@ -156,7 +157,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   icon: const Icon(Icons.g_mobiledata, size: 28),
                   label: const Text('Continue with Google'),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.sm),
+                TextButton(
+                  onPressed: _loading ? null : _continueAsGuest,
+                  child: const Text('Continue without an account'),
+                ),
+                const SizedBox(height: AppSpacing.sm),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
