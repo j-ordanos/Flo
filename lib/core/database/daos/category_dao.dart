@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../../enums/category_kind.dart';
 import '../../enums/sync_status.dart';
 import '../app_database.dart';
 import '../tables/categories.dart';
@@ -35,6 +36,18 @@ class CategoryDao extends DatabaseAccessor<AppDatabase> with _$CategoryDaoMixin 
     return row.read(count) ?? 0;
   }
 
+  /// Live count of a user's categories of one [kind] (excludes soft-deletes).
+  Future<int> countForUserAndKind(String userId, CategoryKind kind) async {
+    final count = categories.id.count();
+    final row = await (selectOnly(categories)
+          ..addColumns([count])
+          ..where(categories.userId.equals(userId) &
+              categories.kind.equalsValue(kind) &
+              categories.deletedAt.isNull()))
+        .getSingle();
+    return row.read(count) ?? 0;
+  }
+
   Future<void> upsert(CategoryRow row) =>
       into(categories).insertOnConflictUpdate(row);
 
@@ -63,16 +76,18 @@ class CategoryDao extends DatabaseAccessor<AppDatabase> with _$CategoryDaoMixin 
         ),
       );
 
-  /// Updates a default category's color (matched by icon key) only when it
-  /// differs — keeps seeded categories in sync with the canonical palette.
+  /// Updates a default category's color (matched by kind + icon key) only when
+  /// it differs — keeps seeded categories in sync with the canonical palette.
   Future<void> setDefaultColor(
     String userId,
+    CategoryKind kind,
     String iconKey,
     String colorHex,
   ) =>
       (update(categories)
             ..where((c) =>
                 c.userId.equals(userId) &
+                c.kind.equalsValue(kind) &
                 c.icon.equals(iconKey) &
                 c.isDefault.equals(true) &
                 c.colorHex.equals(colorHex).not()))

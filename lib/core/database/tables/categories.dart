@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../../enums/category_kind.dart';
 import '../../enums/sync_status.dart';
 
 /// Spending categories. `icon` stores a stable key resolved to an `IconData`
@@ -11,6 +12,8 @@ class Categories extends Table {
   TextColumn get name => text()();
   TextColumn get icon => text()();
   TextColumn get colorHex => text().named('color_hex')();
+  TextColumn get kind => textEnum<CategoryKind>()
+      .withDefault(const Constant('expense'))();
   BoolColumn get isDefault =>
       boolean().named('is_default').withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().named('created_at')();

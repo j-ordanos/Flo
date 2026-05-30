@@ -26,7 +26,7 @@ class AppDatabase extends _$AppDatabase {
       : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -37,14 +37,17 @@ class AppDatabase extends _$AppDatabase {
           if (from < 3) {
             await m.addColumn(expenses, expenses.type);
           }
+          if (from < 4) {
+            await m.addColumn(categories, categories.kind);
+          }
         },
       );
 
   /// Collapses duplicate default categories that accumulated from re-seeding
   /// across installs/logins (each used to get a random id). Groups live default
-  /// rows by icon, keeps one survivor (preferring the deterministic id), repoints
-  /// any expenses/budgets to it, and soft-deletes the rest (marked pending so the
-  /// deletes propagate during sync). Returns true if anything was merged.
+  /// rows by (kind, icon), keeps one survivor (preferring the deterministic id),
+  /// repoints any expenses/budgets to it, and soft-deletes the rest (marked
+  /// pending so the deletes propagate during sync). Returns true if merged.
   Future<bool> dedupeDefaultCategories(String userId) {
     return transaction(() async {
       final defaults = await (select(categories)
@@ -55,17 +58,19 @@ class AppDatabase extends _$AppDatabase {
             ..orderBy([(c) => OrderingTerm.asc(c.createdAt)]))
           .get();
 
-      final byIcon = <String, List<CategoryRow>>{};
+      final byKey = <String, List<CategoryRow>>{};
       for (final c in defaults) {
-        byIcon.putIfAbsent(c.icon, () => <CategoryRow>[]).add(c);
+        byKey.putIfAbsent('${c.kind.name}_${c.icon}', () => <CategoryRow>[])
+            .add(c);
       }
 
       final now = DateTime.now().toUtc();
       var changed = false;
-      for (final entry in byIcon.entries) {
-        final group = entry.value;
+      for (final group in byKey.values) {
         if (group.length <= 1) continue;
-        final canonicalId = defaultCategoryId(userId, entry.key);
+        final first = group.first;
+        final canonicalId =
+            defaultCategoryId(userId, first.kind.name, first.icon);
         final survivor = group.firstWhere(
           (c) => c.id == canonicalId,
           orElse: () => group.first,

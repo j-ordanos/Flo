@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/enums/category_kind.dart';
 import '../../../../core/enums/sync_status.dart';
 import '../../../../core/providers/session_provider.dart';
 import '../../../../core/utils/hex_color.dart';
@@ -80,6 +81,7 @@ class _AddCategorySheetState extends ConsumerState<AddCategorySheet> {
         name: name,
         icon: _iconKey,
         colorHex: _colorHex,
+        kind: widget.income ? CategoryKind.income : CategoryKind.expense,
         createdAt: now,
         updatedAt: now,
       ));

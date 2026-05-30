@@ -18,13 +18,36 @@ class CategoryRepositoryImpl implements CategoryRepository {
     if (await _dao.countForUser(userId) > 0) return;
     final now = DateTime.now().toUtc();
     final rows = [
-      for (final d in kDefaultCategories)
+      for (final d in kAllDefaultCategories)
         CategoryRow(
-          id: defaultCategoryId(userId, d.icon),
+          id: defaultCategoryId(userId, d.kind.name, d.icon),
           userId: userId,
           name: d.name,
           icon: d.icon,
           colorHex: d.colorHex,
+          kind: d.kind,
+          isDefault: true,
+          createdAt: now,
+          updatedAt: now,
+          syncStatus: SyncStatus.pending,
+        ),
+    ];
+    await _dao.insertAll(rows);
+  }
+
+  @override
+  Future<void> seedIncomeDefaultsIfMissing(String userId) async {
+    if (await _dao.countForUserAndKind(userId, CategoryKind.income) > 0) return;
+    final now = DateTime.now().toUtc();
+    final rows = [
+      for (final d in kDefaultIncomeCategories)
+        CategoryRow(
+          id: defaultCategoryId(userId, d.kind.name, d.icon),
+          userId: userId,
+          name: d.name,
+          icon: d.icon,
+          colorHex: d.colorHex,
+          kind: d.kind,
           isDefault: true,
           createdAt: now,
           updatedAt: now,
@@ -36,8 +59,8 @@ class CategoryRepositoryImpl implements CategoryRepository {
 
   @override
   Future<void> refreshDefaultStyles(String userId) async {
-    for (final d in kDefaultCategories) {
-      await _dao.setDefaultColor(userId, d.icon, d.colorHex);
+    for (final d in kAllDefaultCategories) {
+      await _dao.setDefaultColor(userId, d.kind, d.icon, d.colorHex);
     }
   }
 

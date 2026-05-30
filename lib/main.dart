@@ -41,6 +41,7 @@ Future<void> main() async {
   if (localOwnerId == kLocalUserId) {
     final categories = container.read(categoryRepositoryProvider);
     await categories.seedDefaultsIfEmpty(localOwnerId);
+    await categories.seedIncomeDefaultsIfMissing(localOwnerId);
     await categories.refreshDefaultStyles(localOwnerId);
   }
 

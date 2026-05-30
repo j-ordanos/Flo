@@ -5,6 +5,10 @@ abstract interface class CategoryRepository {
   /// Creates the default category set for [userId] if none exist yet.
   Future<void> seedDefaultsIfEmpty(String userId);
 
+  /// Backfills default income categories for users who were seeded before income
+  /// existed (no-op if they already have any income category).
+  Future<void> seedIncomeDefaultsIfMissing(String userId);
+
   /// Aligns existing default categories with the canonical color palette.
   Future<void> refreshDefaultStyles(String userId);
 

@@ -14,7 +14,9 @@ const String kGuestModeKey = 'guest_mode';
 /// intent-filter, iOS URL scheme, and Supabase allowed redirect URLs).
 const String kOAuthRedirect = 'com.jordanos.flo://login-callback';
 
-/// Deterministic id for a seeded default category. Stable per (user, icon) so
-/// re-seeding across installs/logins is idempotent — upsert/insert-or-ignore
-/// collapse onto the same row instead of creating duplicates.
-String defaultCategoryId(String userId, String icon) => 'cat_${userId}_$icon';
+/// Deterministic id for a seeded default category. Stable per (user, kind, icon)
+/// so re-seeding across installs/logins is idempotent — upsert/insert-or-ignore
+/// collapse onto the same row instead of creating duplicates. [kind] is part of
+/// the key because expense and income can share an icon (e.g. "other").
+String defaultCategoryId(String userId, String kind, String icon) =>
+    'cat_${userId}_${kind}_$icon';

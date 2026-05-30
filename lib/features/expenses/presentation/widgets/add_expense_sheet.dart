@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/enums/category_kind.dart';
 import '../../../../core/enums/sync_status.dart';
 import '../../../../core/enums/transaction_type.dart';
 import '../../../../core/providers/session_provider.dart';
@@ -169,8 +170,11 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final categories =
-        ref.watch(categoriesProvider).value ?? const <Category>[];
+    final wantKind =
+        _isIncome ? CategoryKind.income : CategoryKind.expense;
+    final categories = (ref.watch(categoriesProvider).value ?? const <Category>[])
+        .where((c) => c.kind == wantKind)
+        .toList();
     final isZero = _amountCents == 0;
 
     return Padding(
@@ -194,7 +198,11 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
           const SizedBox(height: AppSpacing.md),
           _TypeToggle(
             value: _type,
-            onChanged: (t) => setState(() => _type = t),
+            onChanged: (t) => setState(() {
+              _type = t;
+              // Selected category belongs to the other kind now — clear it.
+              _categoryId = null;
+            }),
           ),
           const SizedBox(height: AppSpacing.md),
           _CategoryStrip(

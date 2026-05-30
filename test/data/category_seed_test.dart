@@ -1,5 +1,8 @@
 import 'package:drift/native.dart';
 import 'package:flo/core/database/app_database.dart';
+import 'package:flo/core/enums/category_kind.dart';
+import 'package:flo/core/enums/sync_status.dart';
+import 'package:flo/features/categories/data/default_categories.dart';
 import 'package:flo/features/categories/data/repositories/category_repository_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 

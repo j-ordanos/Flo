@@ -81,6 +81,7 @@ class AuthController {
       await db.reassignLocalUserData(userId);
       final categories = _ref.read(categoryRepositoryProvider);
       await categories.seedDefaultsIfEmpty(userId);
+      await categories.seedIncomeDefaultsIfMissing(userId);
       await categories.refreshDefaultStyles(userId);
       await db.dedupeDefaultCategories(userId);
     } finally {

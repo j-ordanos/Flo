@@ -35,7 +35,10 @@ void main() {
     await repo.seedDefaultsIfEmpty('u1');
     final first = await db.categoryDao.getCategories('u1');
     expect(first, isNotEmpty);
-    expect(first.any((c) => c.id == defaultCategoryId('u1', 'food')), isTrue);
+    expect(
+      first.any((c) => c.id == defaultCategoryId('u1', 'expense', 'food')),
+      isTrue,
+    );
 
     // Re-seeding does nothing (count > 0) and ids stay stable.
     await repo.seedDefaultsIfEmpty('u1');
@@ -45,7 +48,8 @@ void main() {
 
   test('dedupe collapses duplicate defaults and repoints expenses', () async {
     // Two "Food" defaults with different ids (the old random-id bug).
-    await db.categoryDao.upsert(cat(defaultCategoryId('u1', 'food'), 'food'));
+    final canonical = defaultCategoryId('u1', 'expense', 'food');
+    await db.categoryDao.upsert(cat(canonical, 'food'));
     await db.categoryDao.upsert(cat('random-dup-id', 'food'));
 
     // An expense points at the duplicate.
@@ -68,11 +72,11 @@ void main() {
     // Only the canonical survivor remains visible.
     final live = await db.categoryDao.getCategories('u1');
     expect(live.where((c) => c.icon == 'food'), hasLength(1));
-    expect(live.single.id, defaultCategoryId('u1', 'food'));
+    expect(live.single.id, canonical);
 
     // The expense was repointed to the survivor and marked pending.
     final e = await db.expenseDao.findById('e1');
-    expect(e!.categoryId, defaultCategoryId('u1', 'food'));
+    expect(e!.categoryId, canonical);
     expect(e.syncStatus, SyncStatus.pending);
 
     // Idempotent: a second pass changes nothing.
