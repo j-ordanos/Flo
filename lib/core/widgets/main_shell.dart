@@ -27,6 +27,17 @@ class MainShell extends ConsumerWidget {
     ref.watch(syncControllerProvider); // keep the sync engine running
     final online = ref.watch(connectivityProvider).value ?? true;
 
+    // Surface sync failures instead of silently leaving rows "pending".
+    ref.listen(syncErrorProvider, (_, next) {
+      if (next == null) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+          content: Text('Sync failed: $next'),
+          duration: const Duration(seconds: 6),
+        ));
+    });
+
     return Scaffold(
       body: Column(
         children: [

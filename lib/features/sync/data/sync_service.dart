@@ -44,23 +44,43 @@ class SyncService {
   }
 
   Future<void> _push(String userId) async {
-    final categories = await _db.categoryDao.getPending(userId);
-    if (categories.isNotEmpty) {
-      await _remote.upsert('categories', categories.map(categoryToJson).toList());
-      await _db.categoryDao.markSynced([for (final c in categories) c.id]);
+    // Push each table independently so a schema/permission problem on one (e.g.
+    // a column the server hasn't migrated yet) doesn't block the others. The
+    // first error is rethrown so the caller can retry and surface it.
+    Object? firstError;
+
+    try {
+      final categories = await _db.categoryDao.getPending(userId);
+      if (categories.isNotEmpty) {
+        await _remote.upsert(
+            'categories', categories.map(categoryToJson).toList());
+        await _db.categoryDao.markSynced([for (final c in categories) c.id]);
+      }
+    } catch (e) {
+      firstError ??= e;
     }
 
-    final expenses = await _db.expenseDao.getPending(userId);
-    if (expenses.isNotEmpty) {
-      await _remote.upsert('expenses', expenses.map(expenseToJson).toList());
-      await _db.expenseDao.markSynced([for (final e in expenses) e.id]);
+    try {
+      final expenses = await _db.expenseDao.getPending(userId);
+      if (expenses.isNotEmpty) {
+        await _remote.upsert('expenses', expenses.map(expenseToJson).toList());
+        await _db.expenseDao.markSynced([for (final e in expenses) e.id]);
+      }
+    } catch (e) {
+      firstError ??= e;
     }
 
-    final budgets = await _db.budgetDao.getPending(userId);
-    if (budgets.isNotEmpty) {
-      await _remote.upsert('budgets', budgets.map(budgetToJson).toList());
-      await _db.budgetDao.markSynced([for (final b in budgets) b.id]);
+    try {
+      final budgets = await _db.budgetDao.getPending(userId);
+      if (budgets.isNotEmpty) {
+        await _remote.upsert('budgets', budgets.map(budgetToJson).toList());
+        await _db.budgetDao.markSynced([for (final b in budgets) b.id]);
+      }
+    } catch (e) {
+      firstError ??= e;
     }
+
+    if (firstError != null) throw firstError;
   }
 
   Future<void> _pull(String userId) async {

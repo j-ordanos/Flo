@@ -15,6 +15,18 @@ import '../../domain/sync_remote.dart';
 
 enum SyncPhase { idle, syncing, synced, error }
 
+/// The last sync error message (null when the last sync succeeded). Surfaced in
+/// the UI so failures aren't silent — invaluable for diagnosing why a row stays
+/// "pending" (e.g. a Supabase column that hasn't been migrated yet).
+class SyncErrorNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void set(String? message) => state = message;
+}
+
+final syncErrorProvider =
+    NotifierProvider<SyncErrorNotifier, String?>(SyncErrorNotifier.new);
+
 final syncRemoteProvider = Provider<SyncRemote>(
   (ref) => SupabaseSyncRemote(ref.watch(supabaseClientProvider)),
 );
@@ -61,8 +73,10 @@ class SyncController extends Notifier<SyncPhase> {
     state = SyncPhase.syncing;
     try {
       await ref.read(syncServiceProvider).sync(userId);
+      ref.read(syncErrorProvider.notifier).set(null);
       state = SyncPhase.synced;
-    } catch (_) {
+    } catch (e) {
+      ref.read(syncErrorProvider.notifier).set(e.toString());
       state = SyncPhase.error;
     }
   }
